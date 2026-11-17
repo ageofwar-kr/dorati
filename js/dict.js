@@ -73,7 +73,21 @@ window.Dict = (function () {
     } catch (e) { /* noop */ }
   }
 
-  function pack(word, pos, senses, source, link) {
+  function mergeItems(items, word) {
+  var senses = [], link = "", pos = "", w = word;
+  for (var i = 0; i < items.length && senses.length < 3; i++) {
+    var it = items[i];
+    if (!w && it.word) w = it.word;
+    if (!pos && it.pos) pos = it.pos;
+    if (!link && it.link) link = it.link;
+    (it.senses || []).forEach(function (sd) {
+      if (sd && senses.indexOf(sd) < 0 && senses.length < 3) senses.push(sd);
+    });
+  }
+  return pack(w, pos, senses, "국립국어원 표준국어대사전", link);
+}
+
+function pack(word, pos, senses, source, link) {
     return { word: word, pos: pos || "", senses: senses || [], source: source || "", link: link || "" };
   }
 
@@ -99,10 +113,7 @@ window.Dict = (function () {
     return fetch(DB + "/dict/" + key + ".json", { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (v) {
-        if (v && v.items && v.items.length) {
-          var it = v.items[0];
-          return pack(it.word || word, it.pos, it.senses, "국립국어원 표준국어대사전", it.link);
-        }
+        if (v && v.items && v.items.length) return mergeItems(v.items, word);
         return null;
       })
       .catch(function () { return null; });
@@ -115,8 +126,7 @@ window.Dict = (function () {
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) {
         if (!j || !j.ok || !j.items || !j.items.length) return null;
-        var it = j.items[0];
-        return pack(it.word || word, it.pos, it.senses, "국립국어원 표준국어대사전", it.link);
+        return mergeItems(j.items, word);
       })
       .catch(function () { return null; });
   }
