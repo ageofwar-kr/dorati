@@ -18,8 +18,10 @@
 
   var NICK_KEY = "dorati.nick.v1";
   var HIST_KEY = "dorati.hist.v1";
+  var FLAVOR_KEY = "dorati.doratflavor";
   var state = {
     mode: "normal",
+    flavor: "pure",       /* 도랏 모드 갈래: pure(순수도랏) / crazy(미친도랏) */
     nick: "",
     lastBot: null,
     pendingAsk: null,
@@ -268,6 +270,36 @@
   });
 
   /* ── 모드 ─────────────────────────────────────────────── */
+  /* 실제 엔진에 넘기는 모드 — 도랏은 갈래에 따라 dorat_pure / dorat_crazy 로 갈린다 */
+  function engineMode() {
+    if (state.mode !== "dorat") return state.mode;
+    return state.flavor === "crazy" ? "dorat_crazy" : "dorat_pure";
+  }
+
+  var flavorBar = document.getElementById("flavor");
+
+  function renderFlavor() {
+    if (!flavorBar) return;
+    flavorBar.hidden = state.mode !== "dorat";
+    document.querySelectorAll("[data-flavor-btn]").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.flavorBtn === state.flavor));
+    });
+    document.body.dataset.flavor = state.flavor;
+  }
+
+  function setFlavor(flavor, silent) {
+    state.flavor = flavor === "crazy" ? "crazy" : "pure";
+    lsSet(FLAVOR_KEY, state.flavor);
+    renderFlavor();
+    if (!silent) addSystem(window.DORATI_KB.flavorNotice[state.flavor]);
+  }
+
+  if (flavorBar) {
+    flavorBar.querySelectorAll("[data-flavor-btn]").forEach(function (b) {
+      b.addEventListener("click", function () { setFlavor(b.dataset.flavorBtn); input.focus(); });
+    });
+  }
+
   function setMode(mode, silent) {
     if (["clean", "normal", "dorat", "smart"].indexOf(mode) < 0) return;
     state.mode = mode;
@@ -277,8 +309,12 @@
     });
     renderMascot();
     updateModelLabel();
+    renderFlavor();
     lsSet("dorati.mode", mode);
-    if (!silent) addSystem(window.DORATI_KB.modeNotice[mode]);
+    if (!silent) {
+      addSystem(window.DORATI_KB.modeNotice[mode]);
+      if (mode === "dorat") addSystem(window.DORATI_KB.flavorNotice[state.flavor]);
+    }
   }
 
   document.querySelectorAll("[data-mode-btn]").forEach(function (b) {
@@ -313,6 +349,7 @@
     if (!shouldLearn(a) || !q) return Promise.resolve(null);
     var qn = window.Engine.normalize(q);
     if (!qn || qn.length < 2) return Promise.resolve(null);
+    /* 저장 모드는 세 갈래(건전/일반/도랏) 그대로 — 도랏 갈래는 DB에 'dorat'으로 쌓인다 */
     return window.Store.learn(q, window.Safety.censor(a, "dorat"), state.mode).then(function (e) {
       if (e) {
         lastLearnAt = Date.now();
@@ -357,7 +394,7 @@
     state.busy = true;
     var trow = typingRow();
 
-    Promise.resolve(window.Engine.answer(text, state.mode, state.snap)).then(function (res) {
+    Promise.resolve(window.Engine.answer(text, engineMode(), state.snap)).then(function (res) {
       setTimeout(function () {
         trow.remove();
         handleResult(res);
@@ -441,7 +478,7 @@
   }
 
   function fallbackToEngine(text, prevBot, pending, note) {
-    Promise.resolve(window.Engine.answer(text, "normal", state.snap)).then(function (res) {
+    Promise.resolve(window.Engine.answer(text, engineMode(), state.snap)).then(function (res) {
       handleResult(res);
       addSystem(note);
       state.busy = false;
@@ -456,6 +493,9 @@
   function handleResult(res) {
     if (!res) return;
     if (res.type === "mode") {
+      if (res.mode === "dorat" && res.flavor) {
+        setFlavor(res.flavor, true);
+      }
       setMode(res.mode);
       state.lastBot = { text: window.DORATI_KB.modeNotice[res.mode], learnable: false };
       return;
@@ -569,6 +609,7 @@
   function boot() {
     applyTheme(lsGet(THEME_KEY) || "light");
     var savedMode = lsGet("dorati.mode");
+    setFlavor(lsGet(FLAVOR_KEY) || "pure", true);
     setMode(savedMode || "normal", true);
     var savedNick = lsGet(NICK_KEY) || "";
     if (savedNick) setNick(savedNick);

@@ -26,9 +26,9 @@
 </script>
 <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="https://ageofwar-kr.github.io/dorati/assets/og.png">
-<link rel="stylesheet" href="./css/style.css?v=3.2">
+<link rel="stylesheet" href="./css/style.css?v=3.3">
 </head>
-<body data-mode="normal" data-theme="light">
+<body data-mode="normal" data-theme="light" data-flavor="pure">
 
 <div id="kakao-banner" hidden>
   <span>카톡에선 채팅이 좀 답답해요</span>
@@ -63,6 +63,12 @@
   </div>
 </header>
 
+<!-- 도랏 모드 전용 하위 선택: 순수도랏(19금 없음) / 미친도랏(19금 포함) -->
+<div id="flavor" class="flavor" role="group" aria-label="도랏 모드 갈래" hidden>
+  <button type="button" data-flavor-btn="pure" aria-pressed="true">순수도랏</button>
+  <button type="button" data-flavor-btn="crazy" aria-pressed="false">미친도랏 🔞</button>
+</div>
+
 <main id="chat" class="chat" aria-live="polite"></main>
 
 <!-- 닉네임 게이트: 채팅 전에 반드시 입력 -->
@@ -93,15 +99,15 @@
   <span class="ver">v1.8</span>
 </footer>
 
-<script src="./js/config.js?v=3.2"></script>
-<script src="./js/safety.js?v=3.2"></script>
-<script src="./js/smart.js?v=3.2"></script>
-<script src="./js/kb-wiktionary.js?v=3.2"></script>
-<script src="./js/kb-dialogues.js?v=3.2"></script>
-<script src="./js/kb-corpus.js?v=3.2"></script>
-<script src="./js/store.js?v=3.2"></script>
-<script src="./js/dict.js?v=3.2"></script>
-<script src="./js/engine.js?v=3.2"></script>
-<script src="./js/app.js?v=3.2"></script>
+<script src="./js/config.js?v=3.3"></script>
+<script src="./js/safety.js?v=3.3"></script>
+<script src="./js/smart.js?v=3.3"></script>
+<script src="./js/kb-wiktionary.js?v=3.3"></script>
+<script src="./js/kb-dialogues.js?v=3.3"></script>
+<script src="./js/kb-corpus.js?v=3.3"></script>
+<script src="./js/store.js?v=3.3"></script>
+<script src="./js/dict.js?v=3.3"></script>
+<script src="./js/engine.js?v=3.3"></script>
+<script src="./js/app.js?v=3.3"></script>
 </body>
 </html>

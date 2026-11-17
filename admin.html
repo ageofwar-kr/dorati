@@ -411,6 +411,10 @@
     teachResult.innerHTML = head + rows;
   }
 
+  /* 도랏 모드 학습은 중계 서버(Code.gs)의 TEACH_DORAT 지시가 있지만, 구버전 배포가 물려 있어도
+     매운맛이 나오도록 클라이언트에서 같은 취지를 한 줄 더 붙인다(서버에서 300자로 자른다). */
+  var DORAT_HINT = " 반드시 반말. 시발·존나·ㅅㅂ·병신·꺼져 같은 실제 쌕욕과 커뮤 말투 섞기. 성인끼리 19금 농담 허용. 자상·범죄·미성년·비동의·혐오 금지.";
+
   function runTeach() {
     if (teachBusy) return;
     if (!PROXY) { teachStatus.textContent = "중계 주소가 설정되지 않았어요."; return; }
@@ -423,6 +427,10 @@
       var topic = document.getElementById("teach-topic").value.trim();
       instruction = topic ? "주제: " + topic : "";
     }
+    if (target === "dorat" || target === "auto") {
+      instruction = (instruction ? instruction + " " : "") + DORAT_HINT.trim();
+    }
+    instruction = instruction.slice(0, 290);
 
     teachBusy = true;
     teachBtn.disabled = true;

@@ -42,11 +42,32 @@ window.Engine = (function () {
 
   function withMode(bag, mode) {
     if (!bag) return [];
+    if (mode === "dorat_pure") {
+      var src = bag.dorat || [];
+      var pure = [];
+      for (var i = 0; i < src.length; i++) {
+        if (!isAdultLine(src[i])) pure.push(src[i]);
+      }
+      if (pure.length) return pure;
+      return bag.normal || bag.clean || [];
+    }
+    if (mode === "dorat_crazy") mode = "dorat";
     if (mode === "clean" && bag.clean && bag.clean.length) return bag.clean;
     if (mode === "dorat" && bag.dorat && bag.dorat.length) return bag.dorat;
     if (mode === "normal" && bag.normal && bag.normal.length) return bag.normal;
     return bag.normal || bag.clean || bag.dorat || [];
   }
+
+  /* ── 19금(성인) 답변 판별 — 순수도랏은 이 줄을 절대 내보내지 않는다 ──
+     노골적 표현은 쓰지 않았고, 성인끼리 주고받는 농담·연애·밤·몸 이야기를 성인 태그로 본다. */
+  var ADULT_RE = /(19금|십구금|야한|야하게|야해|섹드립|섹스|섹시|야스|음담패설|몸매|글래머|각선미|키스|뽀뽀|입술|침대|호텔|모텔|원나잇|하룻밤|잠자리|성인|유혹|밤 얘기|밤엔|같이 자|옆에 있어|손잡|포옹|애교|심장 터|프로포즈|청혼|신혼|데이트|소개팅|썸 |썸타|짝사랑|고백|플러팅|꼬시|작업 걸|몸 좋|벗|밤 궁합|야한 눈|이불 속)/;
+
+  function isAdultLine(text) {
+    return ADULT_RE.test(String(text || ""));
+  }
+
+  /* 성인 전용 의도 — 순수도랏에서는 통째로 막고 매운맛 받아치기로 답한다 */
+  var ADULT_IDS = { adult19: 1, kiss: 1, bedroom: 1, sexy: 1, bedTalk: 1 };
 
   /* ── 최근 답변 회피 ─────────────────────────────────────── */
   var lastById = Object.create(null);
@@ -241,6 +262,10 @@ window.Engine = (function () {
 
   function intentReply(entry, mode) {
     var pool = withMode(entry, mode);
+    if (mode === "dorat_pure") {
+      /* 성인 의도(19금·키스·침대·몸매·밤얘기)는 순수도랏에서 매운맛으로 받아치고 끝낸다 */
+      if (ADULT_IDS[entry.id]) pool = KB.doratPureDeflect || [];
+    }
     if (!pool.length) pool = withMode(entry, "normal");
     return pickFresh("i:" + entry.id, pool);
   }
@@ -267,6 +292,12 @@ window.Engine = (function () {
 
   function pairReply(item, mode) {
     var pool = withMode(item, mode);
+    if (mode === "dorat_pure") {
+      var only = item.dorat || [];
+      var keeps = false;
+      for (var k = 0; k < only.length; k++) if (!isAdultLine(only[k])) { keeps = true; break; }
+      if (!keeps) pool = KB.doratPureDeflect || [];
+    }
     if (!pool.length) pool = withMode(item, "normal");
     return pickFresh("p:" + item.qn, pool);
   }
@@ -455,9 +486,11 @@ window.Engine = (function () {
   /* ── 모드 변경 요청 ───────────────────────────────────── */
   function modeOf(text) {
     var t = normalize(text);
-    if (/도랏(모드)?(으로|로)?(가|켜|바꿔|해|전환|on)?$/.test(t) || /도랏모드/.test(t)) return "dorat";
-    if (/건전(모드)?(으로|로)?(가|켜|바꿔|해|전환|on)?$/.test(t) || /건전모드/.test(t)) return "clean";
-    if (/일반(모드)?(으로|로)?(가|켜|바꿔|해|전환|on)?$/.test(t) || /일반모드/.test(t)) return "normal";
+    if (/순수도랏/.test(t)) return { mode: "dorat", flavor: "pure" };
+    if (/미친도랏/.test(t)) return { mode: "dorat", flavor: "crazy" };
+    if (/도랏(모드)?(으로|로)?(가|켜|바꿔|해|전환|on)?$/.test(t) || /도랏모드/.test(t)) return { mode: "dorat" };
+    if (/건전(모드)?(으로|로)?(가|켜|바꿔|해|전환|on)?$/.test(t) || /건전모드/.test(t)) return { mode: "clean" };
+    if (/일반(모드)?(으로|로)?(가|켜|바꿔|해|전환|on)?$/.test(t) || /일반모드/.test(t)) return { mode: "normal" };
     return null;
   }
 
@@ -465,17 +498,22 @@ window.Engine = (function () {
     var a = {
       clean: ["네! 사전에 이렇게 나와 있어요 😊", "찾아봤어요. 아래처럼 정리돼 있어요!"],
       normal: ["사전 뒤져봤다. 이거야.", "찾았다 ㅋㅋ 뜻은 이래."],
-      dorat: ["사전 뒤졌다. 이게 정답임.", "찾아옴. 외워. 시험에 나온다."]
+      dorat: ["사전 뒤졌다. 이게 정답임.", "찾아옴. 외워. 시험에 나온다."],
+      dorat_pure: ["사전 뒤졌음 ㅋㅋ 이게 답임.", "찾아옴. 외워라, 병신아."],
+      dorat_crazy: ["사전 뒤졌다. 이게 정답임. 시발.", "찾아옴. 외워. 시험에 나온다."]
     }[mode] || ["사전에 이렇게 나와 있어요."];
     return pick(a);
   }
 
   function notFoundForDict(mode, word) {
-    return {
+    var d = {
       clean: "음, 사전에서 '" + word + "'를 못 찾았어요. 다른 표기로 다시 물어봐 주시겠어요?",
       normal: "사전에 '" + word + "'는 안 나오는데? 철자가 맞아?",
-      dorat: "'" + word + "'? 그건 사전에도 인정 안 하는 말인가 봐. 다시 던져봐."
+      dorat: "'" + word + "'? 그건 사전에도 인정 안 하는 말인가 봐. 다시 던져봐.",
+      dorat_pure: "'" + word + "'? 그건 사전에도 안 나옴 ㅋㅋ 다시 던져봐라, 병신아.",
+      dorat_crazy: "'" + word + "'? 시발 그건 사전에도 인정 안 하는 말인가 봐. 다시 던져봐."
     }[mode];
+    return d || "사전에 그 말은 없어. 철자를 다시 확인해봐.";
   }
 
   /* ── 동기 처리부 (테스트용으로도 쓴다) ─────────────────── */
@@ -497,7 +535,7 @@ window.Engine = (function () {
 
     /* 2) 모드 변경 */
     var m = modeOf(text);
-    if (m) return { type: "mode", mode: m };
+    if (m) return { type: "mode", mode: m.mode, flavor: m.flavor || null };
 
     /* 3) 정식 사전 질문 (뜻·의미·사전) */
     var target = dictTarget(text);
@@ -672,6 +710,7 @@ window.Engine = (function () {
 
   return {
     version: "1.8",
+    isAdultLine: isAdultLine,
     normalize: normalize,
     dice: dice,
     dictTarget: dictTarget,

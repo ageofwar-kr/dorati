@@ -131,6 +131,46 @@ for line in all_soft:
         if w in line:
             soft_hits.append((w, line))
 
+# 4c) 순수도랏 / 미친도랏 분리 검사
+split = ctx.eval("""
+(function(){
+  var pure = 0, crazy = 0, leaked = [], i, k, arr;
+  function count(a, id){
+    if (!a) return;
+    for (var t = 0; t < a.length; t++) {
+      crazy++;
+      if (Engine.isAdultLine(a[t])) { if (id) leaked.push(id + ' :: ' + a[t]); }
+      else pure++;
+    }
+  }
+  for (i = 0; i < DORATI_CORPUS.intents.length; i++) { var e = DORATI_CORPUS.intents[i]; count(e.dorat, e.id); }
+  for (i = 0; i < DORATI_CORPUS.pairs.length; i++) count(DORATI_CORPUS.pairs[i].dorat, 'pair');
+  /* 순수도랏 풀(성인 키워드 걸러낸 뒤)에 19금 문장이 남는지 = 0이어야 함 */
+  var emptyPure = [];
+  for (i = 0; i < DORATI_CORPUS.intents.length; i++) {
+    var x = DORATI_CORPUS.intents[i], keep = 0;
+    for (k = 0; k < x.dorat.length; k++) if (!Engine.isAdultLine(x.dorat[k])) keep++;
+    if (!keep) emptyPure.push(x.id);
+  }
+  var purePool = [];
+  for (i = 0; i < DORATI_CORPUS.intents.length; i++) {
+    var y = DORATI_CORPUS.intents[i];
+    for (k = 0; k < y.dorat.length; k++) if (!Engine.isAdultLine(y.dorat[k])) purePool.push(y.dorat[k]);
+  }
+  var probe = {};
+  function ask(t, m){ var r = Engine.answerSync(t, m, {pairs: [], byNorm: {}}); return r.text || ''; }
+  probe.pureAdult = [ask('19금 얘기 해줘', 'dorat_pure'), ask('키스 해줘', 'dorat_pure'), ask('야한 얘기 해줘', 'dorat_pure')];
+  probe.pureGreet = [ask('안녕', 'dorat_pure'), ask('야식 땡긴다', 'dorat_pure'), ask('회사 너무 싫다', 'dorat_pure')];
+  probe.crazyAdult = [ask('19금 얘기 해줘', 'dorat_crazy'), ask('키스 해줘', 'dorat_crazy')];
+  var pureBad = [];
+  for (i = 0; i < purePool.length; i++) if (Engine.isAdultLine(purePool[i])) pureBad.push(purePool[i]);
+  return JSON.stringify({pure: pure, crazy: crazy, leaked: pureBad.slice(0, 5), emptyPure: emptyPure, probe: probe});
+})()
+""")
+split = json.loads(split)
+pure_leak = [h for h in split["probe"]["pureAdult"]
+             if re.search(r"(19금|야한|야하게|섹|키스|침대|몸매|야스|와꾸|노골적)", h)]
+
 # 5) 하드 필터 · 모드별 욕설 처리 · 실제 응답 샘플
 probe = ctx.eval("""
 (function(){
@@ -159,6 +199,14 @@ print("\n=== 2) 모드별 최소 답변 수 ===")
 print("minRepliesPerIntent:", stats["minRepliesPerIntent"], "/ minRepliesPerPair:", stats["minRepliesPerPair"])
 print("\n=== 2b) dorat/normal 존댓말 잔존 ===")
 print("0건" if not polite else polite)
+print("\n=== 2c) 순수도랏 / 미친도랏 ===")
+print("순수도랏 풀:", split["pure"], " / 미친도랏 풀:", split["crazy"])
+print("순수도랏에서 성인 의도 응답:", split["probe"]["pureAdult"])
+print("미친도랏 성인 의도 응답:", split["probe"]["crazyAdult"])
+print("순수도랏 일반 응답:", split["probe"]["pureGreet"])
+print("순수도랏에 19금 문장 누출:", "0건" if not split["leaked"] else split["leaked"])
+print("순수도랏 성인 의도 누출:", "0건" if not pure_leak else pure_leak)
+print("순수도랏 풀이 빈 의도:", split["emptyPure"] or "없음")
 print("\n=== 3) clean/normal 강한 욕설 ===")
 print("없음" if not dirty else dirty)
 print("\n=== 4) dorat 금지어 ===")
@@ -176,7 +224,8 @@ for m in ("dorat", "normal", "clean"):
 print("\n마스킹:", probe["censor"])
 
 print("\n정중체 잔존:", len(polite), "건")
-ok = (n_corpus_dorat + n_kb_dorat) >= 1700 and not polite and stats["minRepliesPerIntent"] >= 3 and stats["minRepliesPerPair"] >= 3 \
+ok = (n_corpus_dorat + n_kb_dorat) >= 1700 and not polite and split["pure"] >= 1500 \
+    and not split["leaked"] and not pure_leak and stats["minRepliesPerIntent"] >= 3 and stats["minRepliesPerPair"] >= 3 \
     and not hits and not soft_hits and not dirty
 print("\nRESULT:", "PASS" if ok else "FAIL")
 sys.exit(0 if ok else 1)

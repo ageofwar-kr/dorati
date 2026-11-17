@@ -83,10 +83,15 @@ window.Safety = (function () {
     return max;
   }
 
+  /** 도랏 계열 모드(순수도랏·미친도랏 포함)는 욕설을 마스킹하지 않는다 */
+  function isDorat(mode) {
+    return mode === "dorat" || mode === "dorat_pure" || mode === "dorat_crazy";
+  }
+
   /** 모드별 욕설 마스킹 */
   function censor(text, mode) {
     var t = String(text || "");
-    if (mode === "dorat") return t;
+    if (isDorat(mode)) return t;
     var limit = mode === "clean" ? 3 : 3; /* clean=전부, normal=3레벨만 */
     for (var i = 0; i < PROFANITY.length; i++) {
       var lv = PROFANITY[i][0];
@@ -102,7 +107,7 @@ window.Safety = (function () {
   /** 학습된 답변을 이 모드에서 써도 되는지 (욕설 레벨 기준) */
   function allowedInMode(text, mode) {
     var lv = level(text);
-    if (mode === "dorat") return true;
+    if (isDorat(mode)) return true;
     if (mode === "normal") return lv < 3;
     return lv === 0;
   }
