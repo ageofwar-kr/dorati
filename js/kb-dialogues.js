@@ -33,7 +33,7 @@ window.DORATI_KB.intro = {
 window.DORATI_KB.modeNotice = {
   clean: "건전 모드 · 검열 가득, 아주 바른 도랏이",
   normal: "일반 모드 · 적당히 깝치는 도랏이",
-  dorat: "도랏 모드 · 노필터 쌍욕·팩폭·19금 드립, 세상에 참지 않는 도랏이",
+  dorat: "도랏 모드 · 노필터 쌕욕·팩폭, 세상에 참지 않는 도랏이",
   smart: "똑똑이 모드 · 제미나이가 직접 생각해서 답하는 똑똑한 도랏이"
 };
 
