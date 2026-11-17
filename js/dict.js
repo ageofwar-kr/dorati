@@ -7,7 +7,7 @@ window.Dict = (function () {
   var DB = cfg.dbUrl.replace(/\/$/, "");
   var index = null, indexP = null;
   var shards = Object.create(null);
-  var LS = "dorati.dictcache.v1";
+  var LS = "dorati.dictcache.v2";
   var memCache = Object.create(null);
   var COOLDOWN = 6 * 60 * 1000; /* 실패한 조회는 6분간 재요청하지 않음 */
   var failUntil = Object.create(null);
