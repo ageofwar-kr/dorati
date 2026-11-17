@@ -477,7 +477,9 @@
 
   /* ── 첫 인사 / 복원 ───────────────────────────────────── */
   function greet() {
-    var intro = window.DORATI_KB.intro[state.mode];
+    var byMode = (window.DORATI_KB && window.DORATI_KB.intro) || {};
+    var intro = byMode[state.mode] || byMode.normal || [];
+    if (!intro.length) return;
     var text = intro[Math.floor(Math.random() * intro.length)];
     var msg = state.nick && Math.random() > 0.5
       ? callName(state.nick, text)
