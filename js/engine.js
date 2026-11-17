@@ -389,11 +389,12 @@ window.Engine = (function () {
     var table = KB.rps && KB.rps[mode] ? KB.rps[mode] : (KB.rps && KB.rps.normal);
     if (!table) return null;
     var head = pick(table.head).replace(/\{M\}/g, mine);
+    function join(a, b) { return String(a + " " + b).replace(/\s+/g, " ").trim(); }
     if (!user || user === mine) {
-      return head.replace(/\{R\}/g, "무승부") + " " + table.draw;
+      return join(head.replace(/\{R\}/g, "무승부"), table.draw);
     }
     var win = (user === "가위" && mine === "바위") || (user === "바위" && mine === "보") || (user === "보" && mine === "가위");
-    return head.replace(/\{R\}/g, win ? "내 승리" : "네 승리") + " " + (win ? table.win : table.lose);
+    return join(head.replace(/\{R\}/g, win ? "내 승리" : "네 승리"), win ? table.win : table.lose);
   }
 
   function numberAnswer(raw, mode) {
@@ -654,17 +655,19 @@ window.Engine = (function () {
       "너 좀 멍청한데", "왜 하늘은 파래", "ㅋㅋㅋ", "블루투스 알려줘", "내일 시험인데 공부 안 했다",
       "나 요즘 힘들어", "가위바위보", "점메추", "심심해", "오늘 너무 바빴어"];
     rounds = rounds || 50;
-    var n = 0, t0 = 0, t1 = 0;
+    var n = 0, total = 0;
+    var now = (window.performance && window.performance.now)
+      ? function () { return window.performance.now(); }
+      : function () { return Date.now(); };
     for (var r = 0; r < rounds; r++) {
       for (var i = 0; i < samples.length; i++) {
-        var s = samples[i];
-        t0 = (window.performance && window.performance.now) ? window.performance.now() : Date.now();
-        answerSync(s, "normal", { pairs: [], byNorm: {} });
-        t1 = (window.performance && window.performance.now) ? window.performance.now() : Date.now();
+        var t0 = now();
+        answerSync(samples[i], "normal", { pairs: [], byNorm: {} });
+        total += now() - t0;
         n++;
       }
     }
-    return { cases: n, totalMs: t1 - t0, avgMs: n ? (t1 - t0) / n : 0 };
+    return { cases: n, totalMs: Math.round(total * 1000) / 1000, avgMs: n ? Math.round((total / n) * 10000) / 10000 : 0 };
   }
 
   return {
