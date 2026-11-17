@@ -45,7 +45,10 @@ window.Engine = (function () {
     var cut = t.search(/(의)?(뜻풀이|뜻|의미|사전)/);
     if (cut <= 0 && !qmark) return null;
     var head = cut > 0 ? t.slice(0, cut) : t.replace(/(뜻|의미|사전).*$/, "");
-    head = head.replace(STOPHEAD, "").replace(PARTICLES, "").replace(STOPHEAD, "");
+    head = head.replace(STOPHEAD, "");
+    var stripped = head.replace(PARTICLES, "");
+    if (stripped.length >= 2) head = stripped;
+    head = head.replace(STOPHEAD, "");
     if (!head) return null;
     if (head.length > 12) return null;
     if (/[?!]|어때|해줘|해요/.test(head)) return null;
