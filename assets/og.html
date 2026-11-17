@@ -33,7 +33,7 @@
   .c2{background:#ff8a3d}
   .c3{background:#7b3fe4}
   .right{position:relative;width:400px;height:400px;flex:0 0 400px}
-  .right svg{width:400px;height:400px;filter:drop-shadow(0 26px 40px rgba(120,70,20,.22))}
+  .right svg{width:400px;height:400px}
   .bubble{
     position:absolute;right:-6px;top:-24px;background:#fff;border:5px solid #2a1d12;border-radius:26px;
     padding:16px 24px;font-size:27px;font-weight:900;color:#2a1d12;letter-spacing:-.03em;
@@ -52,22 +52,10 @@
   <div class="right">
     <div class="bubble">뭐, 나한테 말 걸어?</div>
     <svg viewBox="0 0 100 100">
-      <defs>
-        <radialGradient id="g" cx="35%" cy="26%" r="82%">
-          <stop offset="0" stop-color="#ffd08a"/><stop offset="1" stop-color="#ff8a3d"/>
-        </radialGradient>
-      </defs>
-      <ellipse cx="50" cy="92" rx="27" ry="4" fill="#000" opacity=".08"/>
-      <path d="M50 16c21 0 37 15 37 35 0 18-15 30-37 30S13 69 13 51c0-20 16-35 37-35z" fill="url(#g)" stroke="#b2560f" stroke-width="2.4"/>
-      <path d="M24 39q7-14 20-17" stroke="#fff" stroke-width="3.4" fill="none" opacity=".55" stroke-linecap="round"/>
-      <ellipse cx="35" cy="53" rx="7.6" ry="9" fill="#fff"/><ellipse cx="65" cy="53" rx="7.6" ry="9" fill="#fff"/>
-      <circle cx="36" cy="54" r="3.9" fill="#b2560f"/><circle cx="64" cy="54" r="3.9" fill="#b2560f"/>
-      <circle cx="37.4" cy="52.2" r="1.4" fill="#fff"/><circle cx="65.4" cy="52.2" r="1.4" fill="#fff"/>
-      <path d="M42 68q8 7 16-1" stroke="#b2560f" stroke-width="2.9" fill="none" stroke-linecap="round"/>
-      <ellipse cx="25" cy="63" rx="5.2" ry="3.2" fill="#ff9aa8" opacity=".5"/>
-      <ellipse cx="75" cy="63" rx="5.2" ry="3.2" fill="#ff9aa8" opacity=".5"/>
-      <path d="M25 45q6-4 12-2" stroke="#b2560f" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-      <path d="M63 43q6-2 12 2" stroke="#b2560f" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <circle cx="50" cy="50" r="37" fill="#ff8a3d"/>
+      <circle cx="38" cy="47" r="5.6" fill="#6d2f08"/>
+      <circle cx="62" cy="47" r="5.6" fill="#6d2f08"/>
+      <path d="M42 62q8 5 16 0" stroke="#6d2f08" stroke-width="5.4" fill="none" stroke-linecap="round"/>
     </svg>
   </div>
 </body>

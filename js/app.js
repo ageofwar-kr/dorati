@@ -46,48 +46,33 @@
   }
 
   /* ── 마스코트 ─────────────────────────────────────────── */
+  /* 아주 단순한 납작 얼굴: 동그라미 하나 + 눈·입만. 그라데이션/광택/그림자/불꽃 없음. */
   function mascotSVG(mode) {
     var g = {
-      clean: { body1: "#8fe3c4", body2: "#3e9e7a", line: "#1f6b51" },
-      normal: { body1: "#ffd08a", body2: "#ff8a3d", line: "#b2560f" },
-      dorat: { body1: "#c9a3ff", body2: "#7b3fe4", line: "#4b1f9c" }
-    }[mode] || { body1: "#ffd08a", body2: "#ff8a3d", line: "#b2560f" };
-    var face = "";
-    if (mode === "clean") {
-      face =
-        '<ellipse cx="36" cy="55" rx="7.2" ry="8.4" fill="#fff"/><ellipse cx="64" cy="55" rx="7.2" ry="8.4" fill="#fff"/>' +
-        '<circle cx="37" cy="56" r="3.6" fill="' + g.line + '"/><circle cx="63" cy="56" r="3.6" fill="' + g.line + '"/>' +
-        '<circle cx="38.2" cy="54.4" r="1.3" fill="#fff"/><circle cx="64.2" cy="54.4" r="1.3" fill="#fff"/>' +
-        '<path d="M44 68q6 4.6 12 0" stroke="' + g.line + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
-        '<ellipse cx="27" cy="64" rx="5" ry="3.2" fill="#ff9aa8" opacity=".55"/>' +
-        '<ellipse cx="73" cy="64" rx="5" ry="3.2" fill="#ff9aa8" opacity=".55"/>' +
-        '<ellipse cx="50" cy="17" rx="13" ry="4" fill="none" stroke="#ffd76b" stroke-width="3.4"/>';
-    } else if (mode === "normal") {
-      face =
-        '<ellipse cx="37" cy="56" rx="6.4" ry="7.6" fill="#fff"/><ellipse cx="63" cy="56" rx="6.4" ry="7.6" fill="#fff"/>' +
-        '<circle cx="38" cy="57" r="3.2" fill="' + g.line + '"/><circle cx="64" cy="57" r="3.2" fill="' + g.line + '"/>' +
-        '<path d="M28 44q7-4 13-1" stroke="' + g.line + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
-        '<path d="M59 43q7-3 13 1" stroke="' + g.line + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
-        '<path d="M42 67q8 6 16-1" stroke="' + g.line + '" stroke-width="2.8" fill="none" stroke-linecap="round"/>' +
-        '<ellipse cx="26" cy="64" rx="5" ry="3" fill="#ff9aa8" opacity=".45"/>' +
-        '<ellipse cx="74" cy="64" rx="5" ry="3" fill="#ff9aa8" opacity=".45"/>';
+      clean: { body: "#46c39b", ink: "#12523f" },
+      normal: { body: "#ff8a3d", ink: "#6d2f08" },
+      dorat: { body: "#7b3fe4", ink: "#2a0f63" }
+    }[mode] || { body: "#ff8a3d", ink: "#6d2f08" };
+
+    var eyes, mouth;
+    if (mode === "dorat") {
+      /* 도랏: 게슴츠레한 눈 + 일자 입 */
+      eyes =
+        '<path d="M31 45l13 5" stroke="' + g.ink + '" stroke-width="6" stroke-linecap="round"/>' +
+        '<path d="M69 45l-13 5" stroke="' + g.ink + '" stroke-width="6" stroke-linecap="round"/>';
+      mouth = '<path d="M42 63h16" stroke="' + g.ink + '" stroke-width="6" stroke-linecap="round"/>';
     } else {
-      face =
-        '<path d="M30 52c4-6 12-6 14 0 2 6-6 10-10 6-4 4-6 0-4-6z" fill="#fff"/>' +
-        '<path d="M56 52c4-6 12-6 14 0 2 6-6 10-10 6-4 4-6 0-4-6z" fill="#fff"/>' +
-        '<circle cx="37" cy="55" r="3" fill="' + g.line + '"/><circle cx="63" cy="55" r="3" fill="' + g.line + '"/>' +
-        '<path d="M40 66q10 12 20 0z" fill="#7a2b2b"/>' +
-        '<path d="M50 70q6 2 9-2q-3 8-9 2z" fill="#ff8fa3"/>' +
-        '<path d="M18 26l6-10 4 8 7-5-3 10z" fill="#ff5d3d"/>' +
-        '<path d="M82 26l-6-10-4 8-7-5 3 10z" fill="#ff5d3d"/>';
+      eyes =
+        '<circle cx="38" cy="47" r="5.6" fill="' + g.ink + '"/>' +
+        '<circle cx="62" cy="47" r="5.6" fill="' + g.ink + '"/>';
+      mouth = mode === "clean"
+        ? '<path d="M42 61q8 7 16 0" stroke="' + g.ink + '" stroke-width="5.4" fill="none" stroke-linecap="round"/>'
+        : '<path d="M42 62q8 5 16 0" stroke="' + g.ink + '" stroke-width="5.4" fill="none" stroke-linecap="round"/>';
     }
+
     return '<svg viewBox="0 0 100 100" aria-hidden="true">' +
-      '<defs><radialGradient id="dg' + mode + '" cx="35%" cy="28%" r="80%">' +
-      '<stop offset="0" stop-color="' + g.body1 + '"/><stop offset="1" stop-color="' + g.body2 + '"/></radialGradient></defs>' +
-      '<ellipse cx="50" cy="88" rx="26" ry="4" fill="#000" opacity=".08"/>' +
-      '<path d="M50 20c19 0 33 14 33 32 0 16-13 26-33 26S17 68 17 52c0-18 14-32 33-32z" fill="url(#dg' + mode + ')" stroke="' + g.line + '" stroke-width="2.2"/>' +
-      '<path d="M22 40q6-12 18-15" stroke="#fff" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/>' +
-      face + '</svg>';
+      '<circle cx="50" cy="50" r="37" fill="' + g.body + '"/>' +
+      eyes + mouth + '</svg>';
   }
 
   function renderMascot() {
