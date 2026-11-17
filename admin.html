@@ -486,9 +486,10 @@
         });
       })
       .catch(function (e) {
-        teachStatus.textContent = (e && e.name === "AbortError")
-          ? "시간 초과 — 제미나이가 응답하지 않았어요. 다시 눌러주세요."
-          : "실패: " + (e && e.message ? e.message : e);
+        var msg = e && e.message ? e.message : String(e);
+        if (msg === "upstream") msg = "제미나이가 지금 붐버서 응답하지 않았어요(503). 잠시 뒤 다시 눌러주세요.";
+        else if (e && e.name === "AbortError") msg = "시간 초과 — 제미나이가 응답하지 않았어요. 다시 눌러주세요.";
+        teachStatus.textContent = "실패: " + msg;
       })
       .then(function () {
         teachBusy = false;
