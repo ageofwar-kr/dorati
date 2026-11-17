@@ -15,18 +15,18 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="도랏이 — 세상에서 제일 깝치는 한국어 챗봇">
 <meta property="og:description" content="말 걸어봐. 내가 배운 대로 깝쳐줄게. (건전/일반/도랏/똑똑이 4모드)">
-<meta property="og:image" content="https://ageofwar-kr.github.io/dorati/assets/og.png?v=1.8">
+<meta property="og:image" content="https://ageofwar-kr.github.io/dorati/assets/og.png?v=1.9">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:url" content="https://ageofwar-kr.github.io/dorati/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://ageofwar-kr.github.io/dorati/assets/og.png?v=1.8">
+<meta name="twitter:image" content="https://ageofwar-kr.github.io/dorati/assets/og.png?v=1.9">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"도랏이","alternateName":"Dorati","url":"https://ageofwar-kr.github.io/dorati/","applicationCategory":"EntertainmentApplication","operatingSystem":"Web","inLanguage":"ko","description":"사람들이 가르친 말을 실시간으로 배우는 한국어 챗봇. 건전·일반·도랏·똑똑이 4가지 모드.","offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"}}
 </script>
 <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="https://ageofwar-kr.github.io/dorati/assets/og.png">
-<link rel="stylesheet" href="./css/style.css?v=3.9">
+<link rel="stylesheet" href="./css/style.css?v=4.0">
 </head>
 <body data-mode="normal" data-theme="light" data-flavor="pure">
 
@@ -63,11 +63,8 @@
   </div>
 </header>
 
-<!-- 도랏 모드 전용 하위 선택: 순수도랏(19금 없음) / 미친도랏(19금 포함) -->
-<div id="flavor" class="flavor" role="group" aria-label="도랏 모드 갈래" hidden>
-  <button type="button" data-flavor-btn="pure" aria-pressed="true">순수도랏</button>
-  <button type="button" data-flavor-btn="crazy" aria-pressed="false">미친도랏 🔞</button>
-</div>
+<!-- 이스터에그: 미친도랏이 켜져 있을 때만 헤더 아래에 조용히 뜨는 끄기 필 (v1.9) -->
+<button id="egg-off" class="egg-off" type="button" hidden>🔞 미친도랏 끄기 · 도랏으로</button>
 
 <main id="chat" class="chat" aria-live="polite"></main>
 
@@ -85,18 +82,6 @@
   </div>
 </div>
 
-<!-- 미친도랏 진입 경고 (한 번 동의하면 이 브라우저에서는 다시 묻지 않음) -->
-<div id="warn" class="warn" hidden>
-  <div class="warn-card" role="dialog" aria-modal="true" aria-labelledby="warn-title">
-    <h2 id="warn-title">🔞 미친도랏 주의</h2>
-    <p id="warn-body">미친도랏 모드는 거친 쌍욕과 노골적인 19금 성인 드립이 포함되어 있습니다.<br>만 19세 이상이며 이에 동의하시겠습니까?</p>
-    <div class="warn-act">
-      <button type="button" id="warn-cancel" class="warn-no">취소</button>
-      <button type="button" id="warn-ok" class="warn-yes">동의하고 켜기</button>
-    </div>
-  </div>
-</div>
-
 <div id="toast" class="toast" hidden></div>
 
 <form id="composer" class="composer" autocomplete="off">
@@ -108,18 +93,18 @@
 
 <footer class="app-footer">
   <span>사전 뜻풀이 출처: <a href="https://stdict.korean.go.kr" target="_blank" rel="noopener">국립국어원 표준국어대사전</a> · 속담/관용구: <a href="https://ko.wiktionary.org" target="_blank" rel="noopener">한국어 위키낱말사전</a>(CC BY-SA 4.0)</span>
-  <span class="ver">v1.8</span>
+  <span class="ver">v1.9</span>
 </footer>
 
-<script src="./js/config.js?v=3.9"></script>
-<script src="./js/safety.js?v=3.9"></script>
-<script src="./js/smart.js?v=3.9"></script>
-<script src="./js/kb-wiktionary.js?v=3.9"></script>
-<script src="./js/kb-dialogues.js?v=3.9"></script>
-<script src="./js/kb-corpus.js?v=3.9"></script>
-<script src="./js/store.js?v=3.9"></script>
-<script src="./js/dict.js?v=3.9"></script>
-<script src="./js/engine.js?v=3.9"></script>
-<script src="./js/app.js?v=3.9"></script>
+<script src="./js/config.js?v=4.0"></script>
+<script src="./js/safety.js?v=4.0"></script>
+<script src="./js/smart.js?v=4.0"></script>
+<script src="./js/kb-wiktionary.js?v=4.0"></script>
+<script src="./js/kb-dialogues.js?v=4.0"></script>
+<script src="./js/kb-corpus.js?v=4.0"></script>
+<script src="./js/store.js?v=4.0"></script>
+<script src="./js/dict.js?v=4.0"></script>
+<script src="./js/engine.js?v=4.0"></script>
+<script src="./js/app.js?v=4.0"></script>
 </body>
 </html>

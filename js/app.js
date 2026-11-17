@@ -1,4 +1,4 @@
-/* 도랏이 UI v1.1 — 채팅 + 3모드 + 자동학습 + 닉네임 + 대화저장 */
+/* 도랏이 UI v1.9 — 채팅 + 4모드 + 자동학습 + 닉네임 + 대화저장 + 미친도랏 이스터에그 */
 (function () {
   "use strict";
   var cfg = window.DORATI_CONFIG;
@@ -18,7 +18,6 @@
 
   var NICK_KEY = "dorati.nick.v1";
   var HIST_KEY = "dorati.hist.v1";
-  var FLAVOR_KEY = "dorati.doratflavor";
   var state = {
     mode: "normal",
     flavor: "pure",       /* 도랏 모드 갈래: pure(순수도랏) / crazy(미친도랏) */
@@ -276,71 +275,63 @@
     return state.flavor === "crazy" ? "dorat_crazy" : "dorat_pure";
   }
 
-  var flavorBar = document.getElementById("flavor");
-  var warnBox = document.getElementById("warn");
-  var warnOk = document.getElementById("warn-ok");
-  var warnCancel = document.getElementById("warn-cancel");
-  var OK_KEY = "dorati.dorat19ok";
+  /* ── 이스터에그(v1.9) ─────────────────────────────────
+     미친도랏은 화면에 버튼이 없다. 정해진 주문을넣으면 켜지고,
+     켜져 있는 동안에만 헤더 아래에 끄기 필이 조용히 나타난다. */
+  var eggOffBtn = document.getElementById("egg-off");
+  var EGG_RE = /미친\s*도랏이?\s*커\s*몬/;
 
-  function confirmed19() {
-    try { return localStorage.getItem(OK_KEY) === "1"; } catch (e) { return false; }
-  }
-  function remember19() { lsSet(OK_KEY, "1"); }
-
-  function openWarn() {
-    if (!warnBox) return;
-    warnBox.hidden = false;
-    document.body.classList.add("warned");
-    if (warnCancel) warnCancel.focus();
-  }
-  function closeWarn() {
-    if (!warnBox) return;
-    warnBox.hidden = true;
-    document.body.classList.remove("warned");
-  }
-  if (warnOk) warnOk.addEventListener("click", function () {
-    remember19();
-    closeWarn();
-    setFlavor("crazy");
-    if (input) input.focus();
-  });
-  if (warnCancel) warnCancel.addEventListener("click", function () {
-    closeWarn();
-    if (input) input.focus();
-  });
-  if (warnBox) warnBox.addEventListener("click", function (e) {
-    if (e.target === warnBox) closeWarn();
-  });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && warnBox && !warnBox.hidden) closeWarn();
-  });
-
-  /* 미친도랏은 19세 동의를 한 번 받은 뒤에만 켠다 */
-  function requestFlavor(flavor) {
-    if (flavor === "crazy" && !confirmed19()) { openWarn(); return false; }
-    setFlavor(flavor);
-    return true;
+  /* "미친도랏이커몬" — 띄어쓰기가 어디에 들어가도 받아준다 */
+  function isEggTrigger(text) {
+    var raw = String(text || "");
+    if (EGG_RE.test(raw)) return true;
+    return /미친도랏이?커몬/.test(raw.replace(/\s+/g, ""));
   }
 
   function renderFlavor() {
-    if (!flavorBar) return;
-    flavorBar.hidden = state.mode !== "dorat";
-    document.querySelectorAll("[data-flavor-btn]").forEach(function (b) {
-      b.setAttribute("aria-pressed", String(b.dataset.flavorBtn === state.flavor));
-    });
     document.body.dataset.flavor = state.flavor;
+    if (eggOffBtn) eggOffBtn.hidden = !(state.mode === "dorat" && state.flavor === "crazy");
   }
 
   function setFlavor(flavor, silent) {
     state.flavor = flavor === "crazy" ? "crazy" : "pure";
-    lsSet(FLAVOR_KEY, state.flavor);
     renderFlavor();
-    if (!silent) addSystem(window.DORATI_KB.flavorNotice[state.flavor]);
+    if (!silent && state.flavor === "crazy") addSystem(window.DORATI_KB.flavorNotice.crazy);
   }
 
-  if (flavorBar) {
-    flavorBar.querySelectorAll("[data-flavor-btn]").forEach(function (b) {
-      b.addEventListener("click", function () { requestFlavor(b.dataset.flavorBtn); input.focus(); });
+  function addEggBanner() {
+    var kb = window.DORATI_KB.eggBanner || {};
+    var title = kb.title || "🔞 이스터에그 발동 · 미친도랏 입장 완료";
+    chat.appendChild(el("div", "egg-banner",
+      '<span class="t1">' + escapeHtml(title) + "</span>" +
+      '<span class="t2">' + escapeHtml(kb.sub || "이 문은 아는 새끼만 여는 거다") + "</span>"));
+    scrollDown();
+    state.history.push({ r: "s", t: title, ts: Date.now() });
+    saveHistory();
+  }
+
+  /* 주문 발동 — 모드·테마를 바로 미친도랏으로 바꾸고 배너+인사 한 번. 학습(공용 DB)에는 남기지 않는다. */
+  function enterEgg() {
+    setMode("dorat", true);
+    state.flavor = "crazy";
+    renderFlavor();
+    addEggBanner();
+    var pool = window.DORATI_KB.eggGreeting || [];
+    var msg = pool.length ? pool[Math.floor(Math.random() * pool.length)] : "🔞 미친도랏 입장 완료.";
+    var n = withNim(state.nick);
+    addBot(escapeHtml(n ? n + ", " + msg : msg));
+    state.lastBot = { text: msg, learnable: false };
+    state.pendingAsk = null;
+    showToast("🔞 이스터에그 발동");
+  }
+
+  /* 끄기 필 — 미친도랏이 켜져 있을 때만 보이고, 누르면 바로 도랏으로 돌아간다 */
+  if (eggOffBtn) {
+    eggOffBtn.addEventListener("click", function () {
+      setFlavor("pure");
+      addBot(escapeHtml("도랏으로 돌아왔다 ㅋㅋ 방금 그 문 열었던 건 못 본 걸로 하자."));
+      state.lastBot = { text: "도랏", learnable: false };
+      if (input) input.focus();
     });
   }
 
@@ -357,12 +348,17 @@
     lsSet("dorati.mode", mode);
     if (!silent) {
       addSystem(window.DORATI_KB.modeNotice[mode]);
-      if (mode === "dorat") addSystem(window.DORATI_KB.flavorNotice[state.flavor]);
+      if (mode === "dorat" && state.flavor === "crazy") addSystem(window.DORATI_KB.flavorNotice.crazy);
     }
   }
 
   document.querySelectorAll("[data-mode-btn]").forEach(function (b) {
-    b.addEventListener("click", function () { setMode(b.dataset.modeBtn); });
+    b.addEventListener("click", function () {
+      var m = b.dataset.modeBtn;
+      /* 도랏 버튼은 언제나 도랏으로 들어간다 — 미친도랏은 이스터에그로만 */
+      if (m === "dorat" && state.flavor === "crazy") setFlavor("pure", true);
+      setMode(m);
+    });
   });
 
   /* ── 사전 카드 ────────────────────────────────────────── */
@@ -427,6 +423,15 @@
     text = String(text || "").trim();
     if (!state.nick) { openGate(); return; }
     if (!text || state.busy) return;
+
+    /* 이스터에그 주문: 엔진·학습을 거치지 않고 바로 발동(공용 DB에 새지 않게) */
+    if (isEggTrigger(text)) {
+      input.value = "";
+      addUser(text);
+      enterEgg();
+      return;
+    }
+
     input.value = "";
     addUser(text);
 
@@ -537,13 +542,7 @@
   function handleResult(res) {
     if (!res) return;
     if (res.type === "mode") {
-      if (res.mode === "dorat" && res.flavor === "crazy" && !confirmed19()) {
-        openWarn();
-        return;
-      }
-      if (res.mode === "dorat" && res.flavor) {
-        setFlavor(res.flavor, true);
-      }
+      if (res.mode === "dorat" && res.flavor) setFlavor(res.flavor, true);
       setMode(res.mode);
       state.lastBot = { text: window.DORATI_KB.modeNotice[res.mode], learnable: false };
       return;
@@ -559,7 +558,7 @@
     var html = escapeHtml(personalize(res.text))
       .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
     addBot(html, { entry: res.entry });
-    state.lastBot = { text: res.text, learnable: res.kind !== "safety" && res.kind !== "pureBlock" };
+    state.lastBot = { text: res.text, learnable: res.kind !== "safety" && res.kind !== "pureBlock" && res.kind !== "eggHint" };
     state.pendingAsk = res.askTeachFor || null;
   }
 
@@ -657,8 +656,8 @@
   function boot() {
     applyTheme(lsGet(THEME_KEY) || "light");
     var savedMode = lsGet("dorati.mode");
-    var savedFlavor = lsGet(FLAVOR_KEY) || "pure";
-    setFlavor(savedFlavor === "crazy" && !confirmed19() ? "pure" : savedFlavor, true);
+    /* 미친도랏은 이스터에그라 기억하지 않는다 — 새로 열면 언제나 도랏부터 */
+    setFlavor("pure", true);
     setMode(savedMode || "normal", true);
     var savedNick = lsGet(NICK_KEY) || "";
     if (savedNick) setNick(savedNick);

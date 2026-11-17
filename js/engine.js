@@ -497,7 +497,7 @@ window.Engine = (function () {
   function modeOf(text) {
     var t = normalize(text);
     if (/순수도랏/.test(t)) return { mode: "dorat", flavor: "pure" };
-    if (/미친도랏/.test(t)) return { mode: "dorat", flavor: "crazy" };
+    /* 미친도랏은 v1.9부터 이스터에그다 — 이름만 말해도 켜지지 않는다(주문은 app.js에서 받는다). */
     if (/도랏(모드)?(으로|로)?(가|켜|바꿔|해|전환|on)?$/.test(t) || /도랏모드/.test(t)) return { mode: "dorat" };
     if (/건전(모드)?(으로|로)?(가|켜|바꿔|해|전환|on)?$/.test(t) || /건전모드/.test(t)) return { mode: "clean" };
     if (/일반(모드)?(으로|로)?(가|켜|바꿔|해|전환|on)?$/.test(t) || /일반모드/.test(t)) return { mode: "normal" };
@@ -540,6 +540,18 @@ window.Engine = (function () {
         text: window.Safety.notice(safe.kind),
         kind: "safety",
         safetyKind: safe.kind
+      };
+    }
+
+    /* 2-a) 이스터에그 힌트 — '미친도랏'이라는 말만 던지면 문이 있다는 것만 슬쩍 흘린다 */
+    if (/미친도랏/.test(text.replace(/\s+/g, ""))) {
+      var hints = KB.eggHint || [];
+      return {
+        type: "text",
+        text: hints.length ? pick(hints) : "그런 모드는 없어졌어.",
+        intent: "egg:hint",
+        kind: "eggHint",
+        how: "easter"
       };
     }
 
