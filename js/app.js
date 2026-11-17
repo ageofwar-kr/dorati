@@ -1,4 +1,4 @@
-/* 도랏이 UI — 심플이즈베스트: 채팅 + 3모드 + 자동학습 */
+/* 도랏이 UI v1.1 — 채팅 + 3모드 + 자동학습 + 닉네임 + 대화저장 */
 (function () {
   "use strict";
   var cfg = window.DORATI_CONFIG;
@@ -8,22 +8,51 @@
   var toast = document.getElementById("toast");
   var countEl = document.getElementById("learned-count");
   var mascotEl = document.getElementById("mascot");
+  var nickBadge = document.getElementById("nick-badge");
+  var gate = document.getElementById("gate");
+  var gateForm = document.getElementById("gate-form");
+  var gateInput = document.getElementById("gate-input");
+  var gateStart = document.getElementById("gate-start");
+  var gateHint = document.getElementById("gate-hint");
+  var menu = document.getElementById("menu");
+  var menuBtn = document.getElementById("menu-btn");
+
+  var NICK_KEY = "dorati.nick.v1";
+  var HIST_KEY = "dorati.hist.v1";
   var state = {
     mode: "normal",
+    nick: "",
     lastBot: null,
     pendingAsk: null,
     busy: false,
-    snap: { pairs: [], byNorm: {}, count: 0 }
+    snap: { pairs: [], byNorm: {}, count: 0 },
+    history: []
   };
 
-  /* ── 도랏이 마스코트 ─────────────────────────────────── */
+  /* ── 저장/불러오기 ─────────────────────────────────────── */
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* noop */ } }
+
+  function saveHistory() {
+    try {
+      lsSet(HIST_KEY, JSON.stringify(state.history.slice(-300)));
+    } catch (e) { /* noop */ }
+  }
+  function loadHistory() {
+    try {
+      var raw = lsGet(HIST_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+
+  /* ── 마스코트 ─────────────────────────────────────────── */
   function mascotSVG(mode) {
     var g = {
       clean: { body1: "#8fe3c4", body2: "#3e9e7a", line: "#1f6b51" },
       normal: { body1: "#ffd08a", body2: "#ff8a3d", line: "#b2560f" },
       dorat: { body1: "#c9a3ff", body2: "#7b3fe4", line: "#4b1f9c" }
     }[mode] || { body1: "#ffd08a", body2: "#ff8a3d", line: "#b2560f" };
-
     var face = "";
     if (mode === "clean") {
       face =
@@ -59,12 +88,13 @@
       '<ellipse cx="50" cy="88" rx="26" ry="4" fill="#000" opacity=".08"/>' +
       '<path d="M50 20c19 0 33 14 33 32 0 16-13 26-33 26S17 68 17 52c0-18 14-32 33-32z" fill="url(#dg' + mode + ')" stroke="' + g.line + '" stroke-width="2.2"/>' +
       '<path d="M22 40q6-12 18-15" stroke="#fff" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/>' +
-      face +
-      '</svg>';
+      face + '</svg>';
   }
 
   function renderMascot() {
     mascotEl.innerHTML = mascotSVG(state.mode);
+    var gm = document.getElementById("gate-mascot");
+    if (gm) gm.innerHTML = mascotSVG(state.mode);
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", { clean: "#3e9e7a", normal: "#ff8a3d", dorat: "#7b3fe4" }[state.mode]);
   }
@@ -76,16 +106,19 @@
     if (html !== undefined) n.innerHTML = html;
     return n;
   }
-
-  function scrollDown() {
-    requestAnimationFrame(function () { chat.scrollTop = chat.scrollHeight; });
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
   }
+  function scrollDown() { requestAnimationFrame(function () { chat.scrollTop = chat.scrollHeight; }); }
 
-  function addUser(text) {
+  function addUser(text, record) {
     var row = el("div", "row user");
     row.appendChild(el("div", "bubble", escapeHtml(text)));
     chat.appendChild(row);
     scrollDown();
+    if (record !== false) { state.history.push({ r: "u", t: text, ts: Date.now() }); saveHistory(); }
   }
 
   function addBot(html, opts) {
@@ -120,26 +153,25 @@
     row.appendChild(wrap);
     chat.appendChild(row);
     scrollDown();
+    if (opts.record !== false) {
+      state.history.push({ r: "b", h: html, ts: Date.now() });
+      saveHistory();
+    }
     return row;
   }
 
-  function addSystem(text) {
+  function addSystem(text, record) {
     chat.appendChild(el("div", "sys", escapeHtml(text)));
     scrollDown();
-  }
-
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-    });
+    if (record !== false) { state.history.push({ r: "s", t: text, ts: Date.now() }); saveHistory(); }
   }
 
   function typingRow() {
     var row = el("div", "row bot");
     var av = el("div", "avatar");
     av.innerHTML = mascotSVG(state.mode);
-    var b = el("div", "bubble", '<span class="typing"><i></i><i></i><i></i></span>');
-    row.appendChild(av); row.appendChild(b);
+    row.appendChild(av);
+    row.appendChild(el("div", "bubble", '<span class="typing"><i></i><i></i><i></i></span>'));
     chat.appendChild(row);
     scrollDown();
     return row;
@@ -154,9 +186,48 @@
     toastTimer = setTimeout(function () { toast.hidden = true; }, 1900);
   }
 
-  function updateCount(n) {
-    countEl.textContent = n.toLocaleString("ko-KR");
+  function updateCount(n) { countEl.textContent = n.toLocaleString("ko-KR"); }
+
+  /* ── 닉네임 ───────────────────────────────────────────── */
+  function setNick(nick) {
+    state.nick = nick || "";
+    lsSet(NICK_KEY, state.nick);
+    if (state.nick) {
+      nickBadge.hidden = false;
+      nickBadge.textContent = " · " + state.nick;
+    } else {
+      nickBadge.hidden = true;
+    }
   }
+
+  function openGate() {
+    gate.hidden = false;
+    document.body.classList.add("gated");
+    gateInput.value = "";
+    gateStart.disabled = true;
+    gateHint.textContent = "";
+    setTimeout(function () { gateInput.focus(); }, 120);
+  }
+  function closeGate() {
+    gate.hidden = true;
+    document.body.classList.remove("gated");
+  }
+
+  gateInput.addEventListener("input", function () {
+    var v = gateInput.value.trim();
+    gateStart.disabled = v.length < 2;
+    gateHint.textContent = v.length && v.length < 2 ? "2자 이상 입력해줘!" : "";
+  });
+
+  gateForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = gateInput.value.trim().slice(0, 12);
+    if (v.length < 2) { gateHint.textContent = "2자 이상 입력해줘!"; return; }
+    setNick(v);
+    closeGate();
+    greet();
+    input.focus();
+  });
 
   /* ── 모드 ─────────────────────────────────────────────── */
   function setMode(mode, silent) {
@@ -167,7 +238,7 @@
       b.setAttribute("aria-checked", String(b.dataset.modeBtn === mode));
     });
     renderMascot();
-    try { localStorage.setItem("dorati.mode", mode); } catch (e) { /* noop */ }
+    lsSet("dorati.mode", mode);
     if (!silent) addSystem(window.DORATI_KB.modeNotice[mode]);
   }
 
@@ -212,9 +283,19 @@
     });
   }
 
-  /* ── 메시지 전송 ──────────────────────────────────────── */
+  /* ── 닉네임으로 부르기 ────────────────────────────────── */
+  function personalize(text) {
+    if (!state.nick || Math.random() > 0.22) return text;
+    if (/[?？]$/.test(text)) return text;
+    if (state.mode === "clean") return state.nick + "님, " + text;
+    if (state.mode === "dorat") return text + " " + state.nick + "아.";
+    return state.nick + "아, " + text;
+  }
+
+  /* ── 전송 ─────────────────────────────────────────────── */
   function send(text) {
     text = String(text || "").trim();
+    if (!state.nick) { openGate(); return; }
     if (!text || state.busy) return;
     input.value = "";
     addUser(text);
@@ -230,13 +311,8 @@
         trow.remove();
         handleResult(res);
         state.busy = false;
-
-        /* 자동학습: 도랏이 말 → 사용자 답 / 모르는 말 → 가르친 답 */
-        if (pending) {
-          autoLearn(pending, text);
-        } else if (prevBot && prevBot.learnable) {
-          autoLearn(prevBot.text, text);
-        }
+        if (pending) autoLearn(pending, text);
+        else if (prevBot && prevBot.learnable) autoLearn(prevBot.text, text);
       }, 350 + Math.random() * 350);
     }).catch(function () {
       trow.remove();
@@ -253,26 +329,90 @@
       return;
     }
     if (res.type === "card") {
-      addBot(escapeHtml(res.intro) + cardHTML(res.card, ""), { card: false });
-      state.lastBot = { text: res.intro, learnable: false };
+      addBot(escapeHtml(res.intro) + cardHTML(res.card, ""));
+      state.lastBot = { text: res.intro || "사전", learnable: false };
       state.pendingAsk = null;
       return;
     }
     if (res.type === "empty") return;
 
-    addBot(escapeHtml(res.text).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>"), { entry: res.entry });
-    state.lastBot = {
-      text: res.text,
-      learnable: res.kind === "safety" ? false : true
-    };
-    if (res.askTeachFor) {
-      state.pendingAsk = res.askTeachFor;
-    } else {
-      state.pendingAsk = null;
-    }
+    var html = escapeHtml(personalize(res.text))
+      .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
+    addBot(html, { entry: res.entry });
+    state.lastBot = { text: res.text, learnable: res.kind !== "safety" };
+    state.pendingAsk = res.askTeachFor || null;
   }
 
-  /* ── 초기화 ───────────────────────────────────────────── */
+  /* ── 첫 인사 / 복원 ───────────────────────────────────── */
+  function greet() {
+    var intro = window.DORATI_KB.intro[state.mode];
+    var text = intro[Math.floor(Math.random() * intro.length)];
+    var msg = state.nick && Math.random() > 0.5
+      ? state.nick + "아, " + text
+      : text;
+    setTimeout(function () {
+      addBot(escapeHtml(msg));
+      state.lastBot = { text: msg, learnable: false };
+    }, 260);
+  }
+
+  function restore() {
+    if (!state.history.length) return false;
+    state.history.forEach(function (m) {
+      if (m.r === "u") addUser(m.t, false);
+      else if (m.r === "b") addBot(m.h, { record: false });
+      else if (m.r === "s") addSystem(m.t, false);
+    });
+    return true;
+  }
+
+  /* ── 메뉴 ─────────────────────────────────────────────── */
+  function toggleMenu(open) {
+    menu.hidden = !open;
+    menuBtn.setAttribute("aria-expanded", String(open));
+  }
+  menuBtn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    toggleMenu(menu.hidden);
+  });
+  document.addEventListener("click", function () { toggleMenu(false); });
+
+  document.getElementById("menu-nick").addEventListener("click", function () {
+    toggleMenu(false);
+    openGate();
+  });
+
+  document.getElementById("menu-export").addEventListener("click", function () {
+    toggleMenu(false);
+    var lines = state.history.map(function (m) {
+      var who = m.r === "u" ? (state.nick || "나") : (m.r === "b" ? "도랏이" : "안내");
+      var body = m.t || String(m.h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      var d = new Date(m.ts || Date.now());
+      var stamp = d.toLocaleString("ko-KR");
+      return "[" + stamp + "] " + who + ": " + body;
+    }).join("\n");
+    var blob = new Blob([lines || "(대화 없음)"], { type: "text/plain;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "도랏이-대화-" + new Date().toISOString().slice(0, 10) + ".txt";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    showToast("📄 대화를 내보냈어요");
+  });
+
+  document.getElementById("menu-clear").addEventListener("click", function () {
+    toggleMenu(false);
+    if (!confirm("이 기기의 대화 기록을 지울까? (배운 말은 그대로 남아)")) return;
+    state.history = [];
+    saveHistory();
+    chat.innerHTML = "";
+    state.lastBot = null;
+    state.pendingAsk = null;
+    greet();
+  });
+
+  /* ── 카톡 ─────────────────────────────────────────────── */
   function kakao() {
     var ua = navigator.userAgent.toLowerCase();
     if (ua.indexOf("kakaotalk") < 0) return;
@@ -285,10 +425,12 @@
     });
   }
 
+  /* ── 시작 ─────────────────────────────────────────────── */
   function boot() {
-    var saved = null;
-    try { saved = localStorage.getItem("dorati.mode"); } catch (e) { /* noop */ }
-    setMode(saved || "normal", true);
+    var savedMode = lsGet("dorati.mode");
+    setMode(savedMode || "normal", true);
+    var savedNick = lsGet(NICK_KEY) || "";
+    if (savedNick) setNick(savedNick);
     kakao();
 
     window.Store.init();
@@ -299,11 +441,11 @@
     state.snap = window.Store.snapshot();
     updateCount(state.snap.count);
 
-    var intro = window.DORATI_KB.intro[state.mode];
-    setTimeout(function () {
-      addBot(escapeHtml(intro[Math.floor(Math.random() * intro.length)]));
-      state.lastBot = { text: intro, learnable: false };
-    }, 300);
+    state.history = loadHistory();
+    if (!restore()) {
+      if (savedNick) greet();
+    }
+    if (!state.nick) openGate();
   }
 
   form.addEventListener("submit", function (e) {

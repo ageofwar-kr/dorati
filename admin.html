@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>도랏이 관리자 — 학습 단어 관리</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#1f1b16">
+<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+<style>
+  :root{
+    --bg:#f6f3ee; --panel:#fff; --text:#231f19; --dim:#8b857e; --line:#e7e0d6;
+    --accent:#ff8a3d; --ok:#2f8f6b; --danger:#d1462f;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+    font-size:14px; line-height:1.45;
+  }
+  header{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:14px 18px; background:var(--panel); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:10;
+  }
+  header h1{margin:0; font-size:16px; letter-spacing:-.02em; display:flex; align-items:center; gap:8px}
+  header .sub{font-size:11.5px; color:var(--dim); font-weight:500}
+  .wrap{max-width:1080px; margin:0 auto; padding:16px 14px 60px}
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:14px}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px}
+  .stat b{display:block; font-size:22px; font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+  .stat span{font-size:11.5px; color:var(--dim)}
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+  .toolbar input[type=search]{
+    flex:1 1 220px; min-width:0; border:1px solid var(--line); background:var(--panel);
+    border-radius:11px; padding:10px 13px; font:inherit;
+  }
+  .toolbar select{
+    border:1px solid var(--line); background:var(--panel); border-radius:11px; padding:10px 12px; font:inherit;
+  }
+  .toolbar button{
+    border:1px solid var(--line); background:var(--panel); border-radius:11px; padding:10px 14px;
+    font:inherit; font-weight:700; cursor:pointer;
+  }
+  .toolbar button:hover{border-color:var(--accent); color:var(--accent)}
+  .list{display:flex; flex-direction:column; gap:8px}
+  .item{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px;
+    display:grid; grid-template-columns:1fr auto; gap:8px 12px;
+  }
+  .item .q{font-weight:800; letter-spacing:-.01em; word-break:break-word}
+  .item .a{color:#4c463f; word-break:break-word; margin-top:2px}
+  .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:7px; font-size:11px; color:var(--dim)}
+  .tag{padding:2px 8px; border-radius:999px; font-weight:800; font-size:10.5px}
+  .tag.clean{background:#dff0e8; color:#1f6b51}
+  .tag.normal{background:#ffe8d8; color:#b2560f}
+  .tag.dorat{background:#e8ddfb; color:#4b1f9c}
+  .acts{display:flex; gap:6px; align-items:flex-start}
+  .acts button{
+    border:1px solid var(--line); background:#fff; border-radius:9px; padding:6px 10px;
+    font:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .acts .del{color:var(--danger); border-color:#f3d3cc}
+  .acts .del:hover{background:#fdecea}
+  .empty{padding:40px 0; text-align:center; color:var(--dim)}
+
+  /* 로그인 */
+  .gate{position:fixed; inset:0; display:grid; place-items:center; background:#1f1b16; z-index:50; padding:20px}
+  .gate[hidden]{display:none}
+  .gate form{
+    background:var(--panel); border-radius:20px; padding:26px 22px; width:100%; max-width:320px;
+    text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.3);
+  }
+  .gate h2{margin:0 0 6px; font-size:17px}
+  .gate p{margin:0 0 16px; font-size:12px; color:var(--dim); line-height:1.5}
+  .gate input{
+    width:100%; border:1px solid var(--line); border-radius:12px; padding:12px 14px;
+    font:inherit; font-size:16px; letter-spacing:.2em; text-align:center; outline:none;
+  }
+  .gate input:focus{border-color:var(--accent)}
+  .gate button{
+    width:100%; margin-top:10px; border:0; border-radius:12px; padding:12px;
+    background:var(--accent); color:#fff; font:inherit; font-weight:800; font-size:15px; cursor:pointer;
+  }
+  .gate .err{color:var(--danger); font-size:12px; min-height:16px; margin-top:8px}
+  @media (max-width:560px){
+    .item{grid-template-columns:1fr}
+    .acts{justify-content:flex-end}
+  }
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate" hidden>
+  <form id="gate-form" autocomplete="off">
+    <h2>🔒 관리자</h2>
+    <p>학습 데이터를 직접 고치는 화면이에요.<br>패스코드를 입력해 주세요.</p>
+    <input id="pin" type="password" inputmode="numeric" placeholder="패스코드" autocomplete="off" aria-label="패스코드">
+    <button type="submit">들어가기</button>
+    <div class="err" id="err"></div>
+  </form>
+</div>
+
+<header>
+  <h1>도랏이 관리자 <span class="sub">학습 단어 확인 · 관리</span></h1>
+  <div>
+    <button id="logout" style="border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 12px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">잠그기</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><b id="s-total">0</b><span>전체 학습</span></div>
+    <div class="stat"><b id="s-clean">0</b><span>건전</span></div>
+    <div class="stat"><b id="s-normal">0</b><span>일반</span></div>
+    <div class="stat"><b id="s-dorat">0</b><span>도랏</span></div>
+    <div class="stat"><b id="s-votes">0</b><span>👍 / 👎</span></div>
+  </div>
+
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="말이나 대답으로 검색…">
+    <select id="mode-filter">
+      <option value="">모든 모드</option>
+      <option value="clean">건전</option>
+      <option value="normal">일반</option>
+      <option value="dorat">도랏</option>
+    </select>
+    <select id="sort">
+      <option value="new">최신순</option>
+      <option value="old">오래된순</option>
+      <option value="vote">좋아요순</option>
+    </select>
+    <button id="reload">새로고침</button>
+  </div>
+
+  <div id="list" class="list"><div class="empty">불러오는 중…</div></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var DB = "https://dorati-99953-default-rtdb.asia-southeast1.firebasedatabase.app";
+  /* 패스코드 게이트(소프트 게이트): 입력값의 SHA-256 앞 16자리를 비교한다.
+     실제 보호는 DB 규칙이 담당하며, 이 화면은 실수로 들어오는 것을 막는 용도. */
+  var PIN_HASH = "2b0e3585f4c9095c";
+  var SESSION_KEY = "dorati.admin.ok";
+  var pairs = [];
+  var gate = document.getElementById("gate");
+  var gateForm = document.getElementById("gate-form");
+  var pinInput = document.getElementById("pin");
+  var errEl = document.getElementById("err");
+
+  function sha256(text) {
+    var enc = new TextEncoder().encode(text);
+    return crypto.subtle.digest("SHA-256", enc).then(function (buf) {
+      return Array.prototype.map.call(new Uint8Array(buf), function (b) {
+        return ("00" + b.toString(16)).slice(-2);
+      }).join("").slice(0, 16);
+    });
+  }
+
+  function unlock() { gate.hidden = true; sessionStorage.setItem(SESSION_KEY, "1"); load(); }
+  function lock() { sessionStorage.removeItem(SESSION_KEY); gate.hidden = false; pinInput.value = ""; }
+
+  if (sessionStorage.getItem(SESSION_KEY) === "1") { unlock(); } else { gate.hidden = false; }
+
+  gateForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = pinInput.value.trim();
+    if (!v) { errEl.textContent = "패스코드를 입력해 주세요"; return; }
+    sha256("dorati-admin::" + v).then(function (h) {
+      if (h === PIN_HASH) { errEl.textContent = ""; unlock(); }
+      else { errEl.textContent = "패스코드가 맞지 않아요"; pinInput.value = ""; }
+    });
+  });
+
+  document.getElementById("logout").addEventListener("click", lock);
+
+  /* ── 데이터 ─────────────────────────────────────────── */
+  function load() {
+    fetch(DB + "/pairs.json", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (obj) {
+        pairs = [];
+        for (var id in (obj || {})) {
+          var v = obj[id];
+          if (!v || typeof v !== "object" || !v.q) continue;
+          pairs.push({
+            id: id, q: v.q, a: v.a || "", m: v.m || "normal", t: Number(v.t || 0),
+            up: Number((v.v && v.v.up) || 0), down: Number((v.v && v.v.down) || 0), r: Number(v.r || 0)
+          });
+        }
+        render();
+      })
+      .catch(function () {
+        document.getElementById("list").innerHTML = '<div class="empty">불러오기 실패 — 잠시 뒤 새로고침해 주세요.</div>';
+      });
+  }
+
+  function counts() {
+    var c = { total: pairs.length, clean: 0, normal: 0, dorat: 0, votes: 0 };
+    pairs.forEach(function (p) {
+      c[p.m] = (c[p.m] || 0) + 1;
+      c.votes += p.up + p.down;
+    });
+    document.getElementById("s-total").textContent = c.total;
+    document.getElementById("s-clean").textContent = c.clean;
+    document.getElementById("s-normal").textContent = c.normal;
+    document.getElementById("s-dorat").textContent = c.dorat;
+    document.getElementById("s-votes").textContent = c.votes;
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function when(ts) {
+    if (!ts) return "-";
+    var d = new Date(ts);
+    return d.toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  }
+
+  function render() {
+    counts();
+    var q = document.getElementById("search").value.trim().toLowerCase();
+    var mf = document.getElementById("mode-filter").value;
+    var sort = document.getElementById("sort").value;
+    var rows = pairs.filter(function (p) {
+      if (mf && p.m !== mf) return false;
+      if (!q) return true;
+      return (p.q + " " + p.a).toLowerCase().indexOf(q) >= 0;
+    });
+    rows.sort(function (a, b) {
+      if (sort === "old") return a.t - b.t;
+      if (sort === "vote") return (b.up - b.down) - (a.up - a.down);
+      return b.t - a.t;
+    });
+
+    var list = document.getElementById("list");
+    if (!rows.length) {
+      list.innerHTML = '<div class="empty">아직 학습된 말이 없어요.</div>';
+      return;
+    }
+    list.innerHTML = rows.map(function (p) {
+      return '<div class="item" data-id="' + esc(p.id) + '">' +
+        '<div><div class="q">' + esc(p.q) + '</div><div class="a">→ ' + esc(p.a) + '</div>' +
+        '<div class="meta"><span class="tag ' + esc(p.m) + '">' + ({ clean: "건전", normal: "일반", dorat: "도랏" }[p.m] || p.m) + '</span>' +
+        '<span>👍 ' + p.up + ' · 👎 ' + p.down + '</span>' +
+        (p.r ? '<span>신고 ' + p.r + '</span>' : '') +
+        '<span>' + when(p.t) + '</span></div></div>' +
+        '<div class="acts"><button class="edit">수정</button><button class="del">삭제</button></div>' +
+        '</div>';
+    }).join("");
+  }
+
+  document.getElementById("search").addEventListener("input", render);
+  document.getElementById("mode-filter").addEventListener("change", render);
+  document.getElementById("sort").addEventListener("change", render);
+  document.getElementById("reload").addEventListener("click", load);
+
+  document.getElementById("list").addEventListener("click", function (ev) {
+    var btn = ev.target.closest("button");
+    if (!btn) return;
+    var card = btn.closest(".item");
+    var id = card.getAttribute("data-id");
+    var item = pairs.filter(function (p) { return p.id === id; })[0];
+    if (!item) return;
+
+    if (btn.classList.contains("del")) {
+      if (!confirm("삭제할까요?\n\n" + item.q.slice(0, 60) + "\n→ " + item.a.slice(0, 60))) return;
+      fetch(DB + "/pairs/" + encodeURIComponent(id) + ".json", { method: "DELETE" })
+        .then(function () {
+          pairs = pairs.filter(function (p) { return p.id !== id; });
+          render();
+        });
+    }
+    if (btn.classList.contains("edit")) {
+      var next = prompt("새 대답으로 바꿀까요?", item.a);
+      if (next === null) return;
+      next = next.trim().slice(0, 400);
+      if (!next) return;
+      fetch(DB + "/pairs/" + encodeURIComponent(id) + ".json", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ a: next })
+      }).then(function () { item.a = next; render(); });
+    }
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
