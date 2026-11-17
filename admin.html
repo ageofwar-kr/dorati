@@ -5,126 +5,11 @@
 <title>도랏이 관리자 — 사람 학습 · 기본 내장</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#1f1b16">
+<meta name="theme-color" content="#111214">
 <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-<style>
-  :root{
-    --bg:#f6f3ee; --panel:#fff; --text:#231f19; --dim:#8b857e; --line:#e7e0d6;
-    --accent:#ff8a3d; --ok:#2f8f6b; --danger:#d1462f;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0; background:var(--bg); color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
-    font-size:14px; line-height:1.45;
-  }
-  header{
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
-    padding:14px 18px; background:var(--panel); border-bottom:1px solid var(--line);
-    position:sticky; top:0; z-index:10; flex-wrap:wrap;
-  }
-  header h1{margin:0; font-size:16px; letter-spacing:-.02em; display:flex; align-items:center; gap:8px}
-  header .sub{font-size:11.5px; color:var(--dim); font-weight:500}
-  .wrap{max-width:1080px; margin:0 auto; padding:16px 14px 60px}
-
-  /* 탭 */
-  .tabs{display:flex; gap:6px; padding:12px 14px 0; max-width:1080px; margin:0 auto}
-  .tabs button{
-    border:1px solid var(--line); border-bottom:0; background:#efeae1; color:#5b544c;
-    border-radius:12px 12px 0 0; padding:11px 18px; font:inherit; font-weight:800; cursor:pointer;
-  }
-  .tabs button[aria-selected="true"]{background:var(--panel); color:var(--text); box-shadow:0 -2px 0 var(--accent) inset}
-  .tabs .count{display:inline-block; font-weight:700; color:var(--dim); font-size:11.5px; margin-left:8px; font-variant-numeric:tabular-nums; white-space:nowrap}
-
-  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:14px}
-  .stat{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px}
-  .stat b{display:block; font-size:22px; font-variant-numeric:tabular-nums; letter-spacing:-.02em}
-  .stat span{font-size:11.5px; color:var(--dim)}
-  .stat.ok b{color:var(--ok)}
-  .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px}
-  .toolbar input[type=search]{
-    flex:1 1 220px; min-width:0; border:1px solid var(--line); background:var(--panel);
-    border-radius:11px; padding:10px 13px; font:inherit;
-  }
-  .toolbar select{
-    border:1px solid var(--line); background:var(--panel); border-radius:11px; padding:10px 12px; font:inherit;
-  }
-  .toolbar button{
-    border:1px solid var(--line); background:var(--panel); border-radius:11px; padding:10px 14px;
-    font:inherit; font-weight:700; cursor:pointer;
-  }
-  .toolbar button:hover{border-color:var(--accent); color:var(--accent)}
-  .list{display:flex; flex-direction:column; gap:8px}
-  .item{
-    background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px;
-    display:grid; grid-template-columns:1fr auto; gap:8px 12px;
-  }
-  .item .q{font-weight:800; letter-spacing:-.01em; word-break:break-word}
-  .item .a{color:#4c463f; word-break:break-word; margin-top:2px}
-  .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:7px; font-size:11px; color:var(--dim)}
-  .tag{padding:2px 8px; border-radius:999px; font-weight:800; font-size:10.5px}
-  .tag.clean{background:#dff0e8; color:#1f6b51}
-  .tag.normal{background:#ffe8d8; color:#b2560f}
-  .tag.dorat{background:#e8ddfb; color:#4b1f9c}
-  .tag.kind{background:#eae4da; color:#5b544c}
-  .acts{display:flex; gap:6px; align-items:flex-start}
-  .acts button{
-    border:1px solid var(--line); background:#fff; border-radius:9px; padding:6px 10px;
-    font:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;
-  }
-  .acts .del{color:var(--danger); border-color:#f3d3cc}
-  .acts .del:hover{background:#fdecea}
-  .empty{padding:40px 0; text-align:center; color:var(--dim)}
-
-  /* 기본 내장 탭 */
-  .bcard{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px}
-  .bhead{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px}
-  .bhead .id{font-weight:800; letter-spacing:-.01em}
-  .bhead code{
-    font-size:11px; color:#6a635b; background:#f2ede5; border-radius:7px; padding:2px 7px;
-    word-break:break-all; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-  }
-  .replies{display:grid; gap:8px; grid-template-columns:repeat(3,1fr); margin-top:8px}
-  .rgroup{border:1px solid var(--line); border-radius:11px; padding:8px 10px; background:#fdfbf7}
-  .rgroup h4{margin:0 0 5px; font-size:10.5px; letter-spacing:.02em; color:var(--dim); font-weight:800}
-  .rgroup ul{margin:0; padding-left:15px}
-  .rgroup li{font-size:12.5px; color:#3b352f; margin:2px 0; word-break:break-word}
-  .rgroup.clean{border-color:#cfe8dc}
-  .rgroup.normal{border-color:#f6ddc6}
-  .rgroup.dorat{border-color:#ded1f7}
-  .more{display:block; width:100%; margin-top:12px; padding:12px; border:1px dashed var(--line);
-    background:#fbf8f2; border-radius:12px; font:inherit; font-weight:800; cursor:pointer; color:#6a635b}
-  @media (max-width:760px){
-    .replies{grid-template-columns:1fr}
-  }
-  @media (max-width:560px){
-    .item{grid-template-columns:1fr}
-    .acts{justify-content:flex-end}
-    .tabs button{padding:10px 13px; font-size:13px}
-  }
-
-  /* 로그인 */
-  .gate{position:fixed; inset:0; display:grid; place-items:center; background:#1f1b16; z-index:50; padding:20px}
-  .gate[hidden]{display:none}
-  .gate form{
-    background:var(--panel); border-radius:20px; padding:26px 22px; width:100%; max-width:320px;
-    text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.3);
-  }
-  .gate h2{margin:0 0 6px; font-size:17px}
-  .gate p{margin:0 0 16px; font-size:12px; color:var(--dim); line-height:1.5}
-  .gate input{
-    width:100%; border:1px solid var(--line); border-radius:12px; padding:12px 14px;
-    font:inherit; font-size:16px; letter-spacing:.2em; text-align:center; outline:none;
-  }
-  .gate input:focus{border-color:var(--accent)}
-  .gate button{
-    width:100%; margin-top:10px; border:0; border-radius:12px; padding:12px;
-    background:var(--accent); color:#fff; font:inherit; font-weight:800; font-size:15px; cursor:pointer;
-  }
-  .gate .err{color:var(--danger); font-size:12px; min-height:16px; margin-top:8px}
-</style>
+<link rel="stylesheet" href="./css/admin.css?v=1.0">
 </head>
-<body>
+<body data-theme="ganji">
 
 <div id="gate" class="gate" hidden>
   <form id="gate-form" autocomplete="off">
@@ -138,8 +23,9 @@
 
 <header>
   <h1>도랏이 관리자 <span class="sub">사람이 가르친 말 · 기본 내장 대화</span></h1>
-  <div>
-    <button id="logout" style="border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 12px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">잠그기</button>
+  <div class="head-acts">
+    <button id="theme-toggle" class="hbtn" type="button" aria-label="테마 바꾸기" title="간지모드 / 심플모드">🎛 간지모드</button>
+    <button id="logout" class="hbtn" type="button">잠그기</button>
   </div>
 </header>
 
@@ -150,6 +36,42 @@
 
 <!-- ══ 탭 1: 사람 학습 ══ -->
 <section id="tab-human" class="wrap">
+
+  <!-- 제미나이 자동 학습 -->
+  <section class="teach" id="teach">
+    <div class="teach-top">
+      <h2>🤖 제미나이 자동 학습</h2>
+      <span class="teach-model" id="teach-model">Gemini 3.8 Flash</span>
+    </div>
+    <p class="hint">제미나이가 도랏이한테 쓸 만한 말 5쌍을 만들어 공용 DB에 바로 저장해요. 저장된 말은 건전·일반·도랏 모든 모드에 즉시 반영됩니다.</p>
+
+    <div class="teach-modes" role="tablist" aria-label="학습 방식">
+      <button type="button" role="tab" data-teach-mode="auto" aria-selected="true">자동 모드</button>
+      <button type="button" role="tab" data-teach-mode="custom" aria-selected="false">추가명령 모드</button>
+    </div>
+
+    <div class="teach-row">
+      <select id="teach-target" aria-label="말투 모드">
+        <option value="auto">말투: 골고루</option>
+        <option value="clean">말투: 건전</option>
+        <option value="normal">말투: 일반</option>
+        <option value="dorat">말투: 도랏</option>
+      </select>
+      <input id="teach-topic" type="text" placeholder="주제 (선택) — 예: 요즘 밈, 일상 대화, 아재개그" aria-label="주제 (선택)">
+    </div>
+
+    <div id="teach-custom" hidden>
+      <textarea id="teach-instruction" maxlength="300" placeholder="추가 명령을 적어주세요 — 예: 롤(LoL) 드립으로 5개 / 시험 기간 공감 대사 / 도랏 모드로 찰지게" aria-label="추가 명령"></textarea>
+    </div>
+
+    <div class="teach-act">
+      <button id="teach-run" type="button">🤖 제미나이 자동 학습시키기 (5개)</button>
+      <span id="teach-status"></span>
+    </div>
+
+    <div id="teach-result" class="teach-result"></div>
+  </section>
+
   <div class="stats">
     <div class="stat"><b id="s-total">0</b><span>전체 학습</span></div>
     <div class="stat"><b id="s-clean">0</b><span>건전</span></div>
@@ -181,7 +103,7 @@
 <section id="tab-builtin" class="wrap" hidden>
   <div class="stats">
     <div class="stat"><b id="b-intents">-</b><span>내장 의도</span></div>
-    <div class="stat"><b id="b-pairs">-</b><span>Q&A 쌍</span></div>
+    <div class="stat"><b id="b-pairs">-</b><span>Q&amp;A 쌍</span></div>
     <div class="stat"><b id="b-replies">-</b><span>모드별 답변 총계</span></div>
     <div class="stat ok"><b id="b-min">-</b><span>모드별 최소 답변</span></div>
   </div>
@@ -204,6 +126,8 @@
   <div id="b-list" class="list"><div class="empty">불러오는 중…</div></div>
 </section>
 
+<script src="./js/config.js?v=2.7"></script>
+<script src="./js/safety.js?v=2.7"></script>
 <script>
 (function () {
   "use strict";
@@ -212,11 +136,30 @@
      실제 보호는 DB 규칙이 담당하며, 이 화면은 실수로 들어오는 것을 막는 용도. */
   var PIN_HASH = "4e37d0d52a34a46d";
   var SESSION_KEY = "dorati.admin.ok";
+  var THEME_KEY = "dorati.admin.theme";
   var pairs = [];
   var gate = document.getElementById("gate");
   var gateForm = document.getElementById("gate-form");
   var pinInput = document.getElementById("pin");
   var errEl = document.getElementById("err");
+
+  /* ── 테마: 간지모드(기본) / 심플모드 ────────────────── */
+  var themeBtn = document.getElementById("theme-toggle");
+  function applyTheme(name) {
+    var t = name === "simple" ? "simple" : "ganji";
+    document.body.dataset.theme = t;
+    themeBtn.textContent = t === "ganji" ? "🎛 간지모드" : "📄 심플모드";
+    themeBtn.setAttribute("aria-pressed", t === "ganji" ? "true" : "false");
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", t === "ganji" ? "#111214" : "#f6f3ee");
+    try { localStorage.setItem(THEME_KEY, t); } catch (e) { /* noop */ }
+  }
+  var savedTheme = "ganji";
+  try { savedTheme = localStorage.getItem(THEME_KEY) || "ganji"; } catch (e) { /* noop */ }
+  applyTheme(savedTheme);
+  themeBtn.addEventListener("click", function () {
+    applyTheme(document.body.dataset.theme === "ganji" ? "simple" : "ganji");
+  });
 
   function sha256(text) {
     var enc = new TextEncoder().encode(text);
@@ -339,7 +282,7 @@
 
     var list = document.getElementById("list");
     if (!rows.length) {
-      list.innerHTML = '<div class="empty">' + (pairs.length ? "조건에 맞는 말이 없어요." : "아직 학습된 말이 없어요. 도랏이와 대화하면 여기에 쌓여요.") + "</div>";
+      list.innerHTML = '<div class="empty">' + (pairs.length ? "조건에 맞는 말이 없어요." : "아직 학습된 말이 없어요. 도랏이와 대화하거나 위에서 제미나이 자동 학습을 눌러보세요.") + "</div>";
       return;
     }
     list.innerHTML = rows.map(function (p) {
@@ -388,6 +331,140 @@
     }
   });
 
+  /* ══ 제미나이 자동 학습 ══════════════════════════════ */
+  var PROXY = String((window.DORATI_CONFIG && window.DORATI_CONFIG.smartProxy) || "").trim();
+  var teachMode = "auto";
+  var teachBusy = false;
+  var teachBtn = document.getElementById("teach-run");
+  var teachStatus = document.getElementById("teach-status");
+  var teachResult = document.getElementById("teach-result");
+
+  function prettyModel(name) {
+    var m = String(name || "gemini-3.8-flash").replace(/^gemini-/i, "").split("-");
+    var out = ["Gemini"];
+    m.forEach(function (p) {
+      if (!p) return;
+      out.push(/^\d/.test(p) ? p : p.charAt(0).toUpperCase() + p.slice(1));
+    });
+    return out.join(" ");
+  }
+
+  function setTeachMode(mode) {
+    teachMode = mode === "custom" ? "custom" : "auto";
+    document.querySelectorAll("[data-teach-mode]").forEach(function (b) {
+      b.setAttribute("aria-selected", String(b.dataset.teachMode === teachMode));
+    });
+    document.getElementById("teach-custom").hidden = teachMode !== "custom";
+    document.getElementById("teach-topic").hidden = teachMode === "custom";
+  }
+  document.querySelectorAll("[data-teach-mode]").forEach(function (b) {
+    b.addEventListener("click", function () { setTeachMode(b.dataset.teachMode); });
+  });
+  setTeachMode("auto");
+
+  function normalizeQ(s) {
+    return String(s || "")
+      .toLowerCase()
+      .replace(/[\s\u00a0]+/g, "")
+      .replace(/[^\w가-힣ㄱ-ㅎㅏ-ㅣ]/g, "")
+      .replace(/[ㅋㅎ]{2,}/g, "ㅋㅋ");
+  }
+
+  function safePair(q, a) {
+    if (!window.Safety) return true;
+    return window.Safety.scan(q).safe && window.Safety.scan(a).safe;
+  }
+
+  function renderTeachResult(added, skipped, model) {
+    if (!added.length && !skipped.length) { teachResult.innerHTML = ""; return; }
+    var head = '<div class="tr-head">' +
+      '<span class="tr-badge">' + esc(prettyModel(model)) + '</span>' +
+      '<span class="tr-sum">새로 배운 말 <b>' + added.length + '</b>개' +
+      (skipped.length ? ' · 안전필터로 제외 <b>' + skipped.length + '</b>개' : '') + '</span></div>';
+    var rows = added.map(function (p) {
+      return '<div class="tp"><div class="tp-q">' + esc(p.q) + '</div>' +
+        '<div class="tp-a">→ ' + esc(p.a) + '</div>' +
+        '<div class="tp-meta"><span class="tag ' + esc(p.m) + '">' +
+        ({ clean: "건전", normal: "일반", dorat: "도랏" }[p.m] || p.m) + '</span></div></div>';
+    }).join("");
+    teachResult.innerHTML = head + rows;
+  }
+
+  function runTeach() {
+    if (teachBusy) return;
+    if (!PROXY) { teachStatus.textContent = "중계 주소가 설정되지 않았어요."; return; }
+    var target = document.getElementById("teach-target").value;
+    var instruction = "";
+    if (teachMode === "custom") {
+      instruction = document.getElementById("teach-instruction").value.trim();
+      if (!instruction) { teachStatus.textContent = "추가 명령을 적어주세요."; return; }
+    } else {
+      var topic = document.getElementById("teach-topic").value.trim();
+      instruction = topic ? "주제: " + topic : "";
+    }
+
+    teachBusy = true;
+    teachBtn.disabled = true;
+    teachStatus.textContent = "제미나이가 생각 중…";
+    teachResult.innerHTML = "";
+
+    fetch(PROXY, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "teach", target: target, instruction: instruction }),
+      redirect: "follow",
+      cache: "no-store"
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.text();
+      })
+      .then(function (t) {
+        var j;
+        try { j = JSON.parse(t); } catch (e) { throw new Error("응답을 읽지 못했어요"); }
+        if (!j || !j.ok) throw new Error((j && j.error) || "생성 실패");
+        var list = j.pairs || [];
+        if (!list.length) throw new Error("만들어진 말이 없어요");
+        if (j.model) document.getElementById("teach-model").textContent = prettyModel(j.model);
+
+        var added = [], skipped = [];
+        var chain = Promise.resolve();
+        list.forEach(function (p) {
+          chain = chain.then(function () {
+            var q = String(p.q || "").trim().slice(0, 200);
+            var a = String(p.a || "").trim().slice(0, 400);
+            if (!q || !a) return;
+            if (!safePair(q, a)) { skipped.push(p); return; }
+            var m = (p.mode === "clean" || p.mode === "dorat") ? p.mode : "normal";
+            var body = { q: q, qn: normalizeQ(q), a: a, m: m, t: Date.now() };
+            return fetch(DB + "/pairs.json", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body)
+            }).then(function (r) { return r.json().catch(function () { return null; }); })
+              .then(function (res) {
+                if (res && res.name) { body.id = res.name; added.push(body); }
+              })
+              .catch(function () { /* 한 건 실패는 넘어간다 */ });
+          });
+        });
+        return chain.then(function () {
+          renderTeachResult(added, skipped, j.model);
+          teachStatus.textContent = added.length + "개 저장 완료" + (skipped.length ? " · " + skipped.length + "개는 안전필터로 제외" : "");
+          if (added.length) load();
+        });
+      })
+      .catch(function (e) {
+        teachStatus.textContent = "실패: " + (e && e.message ? e.message : e);
+      })
+      .then(function () {
+        teachBusy = false;
+        teachBtn.disabled = false;
+      });
+  }
+
+  teachBtn.addEventListener("click", runTeach);
+
   /* ══ 탭 2: 기본 내장 (읽기 전용) ══════════════════════ */
   var builtin = { loaded: false, loading: null, items: [], shown: 60 };
 
@@ -405,8 +482,8 @@
     if (builtin.loaded) return Promise.resolve();
     if (builtin.loading) return builtin.loading;
     document.getElementById("b-list").innerHTML = '<div class="empty">내장 대화를 불러오는 중…</div>';
-    builtin.loading = loadScript("./js/kb-dialogues.js?v=2.6")
-      .then(function () { return loadScript("./js/kb-corpus.js?v=2.6"); })
+    builtin.loading = loadScript("./js/kb-dialogues.js?v=2.7")
+      .then(function () { return loadScript("./js/kb-corpus.js?v=2.7"); })
       .then(function () {
         var C = window.DORATI_CORPUS || { intents: [], pairs: [] };
         builtin.items = [];

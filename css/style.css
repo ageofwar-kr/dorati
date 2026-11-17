@@ -28,6 +28,11 @@ body[data-mode="dorat"]{
   --user:#7b3fe4; --user-text:#ffffff;
   --accent:#7b3fe4; --accent-soft:#e8ddfb;
 }
+body[data-mode="smart"]{
+  --bg:#f4f6fb; --line:#e2e8f5; --bot:#e9eef9;
+  --user:#3a6df0; --user-text:#ffffff;
+  --accent:#3a6df0; --accent-soft:#e2ebff;
+}
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -77,6 +82,14 @@ body[data-mode="dorat"] .mascot{animation:wiggle 1.6s ease-in-out infinite}
   display:flex; padding:3px; gap:2px;
   background:var(--bot); border-radius:999px; flex:0 0 auto;
 }
+/* 모드 버튼 바로 위, 아주 작은 모델명 — 똑똑이 모드일 때만 보인다 */
+.modes-wrap{display:flex; flex-direction:column; align-items:flex-end; gap:1px; flex:0 0 auto; min-width:0}
+.mode-model{
+  font-size:9px; line-height:1.15; letter-spacing:.01em; color:var(--text-dim);
+  font-weight:600; opacity:.85; white-space:nowrap;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+.mode-model[hidden]{display:none}
 .mode{
   appearance:none; border:0; background:transparent; cursor:pointer;
   font:inherit; font-size:12.5px; font-weight:700; color:var(--text-dim);
@@ -137,6 +150,8 @@ body[data-mode="dorat"] .mascot{animation:wiggle 1.6s ease-in-out infinite}
 .fb .cnt{font-size:10px; color:var(--text-dim); align-self:center; min-width:8px}
 
 /* 타이핑 */
+.typing-wrap{display:inline-flex; align-items:center; gap:8px}
+.typing-label{font-size:12px; color:var(--text-dim)}
 .typing{display:inline-flex; gap:3px; align-items:center; height:18px}
 .typing i{
   width:5px; height:5px; border-radius:50%; background:var(--text-dim);
@@ -265,3 +280,26 @@ body.gated #input{pointer-events:none}
 /* 말풍선 폭: 내용에 맞게 (flex 축소로 일찍 줄바꿈되던 문제) */
 .row.bot > div:not(.avatar){flex:1 1 auto; min-width:0}
 .row.bot .bubble{width:fit-content; max-width:100%}
+
+/* 똑똑이 모드: 코드·인라인 코드 */
+.bubble pre.code{
+  margin:7px 0 3px; padding:9px 11px; background:rgba(30,40,60,.07); border-radius:10px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; line-height:1.5;
+  white-space:pre-wrap; word-break:break-word; overflow-x:auto;
+}
+.row.user .bubble pre.code{background:rgba(255,255,255,.2)}
+.bubble code.inline{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.92em;
+  background:rgba(30,40,60,.07); border-radius:5px; padding:1px 5px;
+}
+.row.user .bubble code.inline{background:rgba(255,255,255,.2)}
+
+/* 좁은 모바일(390px): 모드 4개가 한 줄에 깔끔하게 */
+@media (max-width:430px){
+  .app-header{padding-left:11px; padding-right:11px}
+  .mode{padding:5px 8px; font-size:12px}
+  .modes{gap:1px; padding:2.5px}
+  .brand h1{font-size:16px}
+  .mascot{width:34px; height:34px; flex:0 0 34px}
+  .header-right{gap:4px}
+}

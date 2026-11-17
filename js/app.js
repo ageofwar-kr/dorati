@@ -51,11 +51,20 @@
     var g = {
       clean: { body: "#46c39b", ink: "#12523f" },
       normal: { body: "#ff8a3d", ink: "#6d2f08" },
-      dorat: { body: "#7b3fe4", ink: "#2a0f63" }
+      dorat: { body: "#7b3fe4", ink: "#2a0f63" },
+      smart: { body: "#3a6df0", ink: "#0c2457" }
     }[mode] || { body: "#ff8a3d", ink: "#6d2f08" };
 
     var eyes, mouth;
-    if (mode === "dorat") {
+    if (mode === "smart") {
+      /* 똑똑이: 반짝이는 눈 + 자신만만한 미소 */
+      eyes =
+        '<circle cx="38" cy="47" r="5.8" fill="' + g.ink + '"/>' +
+        '<circle cx="62" cy="47" r="5.8" fill="' + g.ink + '"/>' +
+        '<circle cx="39.8" cy="45.2" r="1.9" fill="#ffffff"/>' +
+        '<circle cx="63.8" cy="45.2" r="1.9" fill="#ffffff"/>';
+      mouth = '<path d="M41 61q9 8 18 0" stroke="' + g.ink + '" stroke-width="5.2" fill="none" stroke-linecap="round"/>';
+    } else if (mode === "dorat") {
       /* 도랏: 게슴츠레한 눈 + 일자 입 */
       eyes =
         '<path d="M32 47h12" stroke="' + g.ink + '" stroke-width="6" stroke-linecap="round"/>' +
@@ -80,7 +89,18 @@
     var gm = document.getElementById("gate-mascot");
     if (gm) gm.innerHTML = mascotSVG(state.mode);
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", { clean: "#3e9e7a", normal: "#ff8a3d", dorat: "#7b3fe4" }[state.mode]);
+    if (meta) meta.setAttribute("content", { clean: "#3e9e7a", normal: "#ff8a3d", dorat: "#7b3fe4", smart: "#3a6df0" }[state.mode] || "#ff8a3d");
+  }
+
+  /* 똑똑이 모드일 때만 모드 버튼 위에 실제 제미나이 모델명을 아주 작게 띄운다 */
+  function updateModelLabel() {
+    var el = document.getElementById("mode-model");
+    if (!el) return;
+    var on = state.mode === "smart";
+    el.hidden = !on;
+    if (!on) return;
+    var name = (window.Smart && window.Smart.model()) || "gemini-3.8-flash";
+    el.textContent = window.Smart && window.Smart.pretty ? window.Smart.pretty(name) : name;
   }
 
   /* ── 말풍선 ───────────────────────────────────────────── */
@@ -150,12 +170,15 @@
     if (record !== false) { state.history.push({ r: "s", t: text, ts: Date.now() }); saveHistory(); }
   }
 
-  function typingRow() {
+  function typingRow(label) {
     var row = el("div", "row bot");
     var av = el("div", "avatar");
     av.innerHTML = mascotSVG(state.mode);
     row.appendChild(av);
-    row.appendChild(el("div", "bubble", '<span class="typing"><i></i><i></i><i></i></span>'));
+    var inner = '<span class="typing-wrap">' +
+      (label ? '<span class="typing-label">' + escapeHtml(label) + '</span>' : '') +
+      '<span class="typing"><i></i><i></i><i></i></span></span>';
+    row.appendChild(el("div", "bubble", inner));
     chat.appendChild(row);
     scrollDown();
     return row;
@@ -214,13 +237,14 @@
 
   /* ── 모드 ─────────────────────────────────────────────── */
   function setMode(mode, silent) {
-    if (["clean", "normal", "dorat"].indexOf(mode) < 0) return;
+    if (["clean", "normal", "dorat", "smart"].indexOf(mode) < 0) return;
     state.mode = mode;
     document.body.dataset.mode = mode;
     document.querySelectorAll("[data-mode-btn]").forEach(function (b) {
       b.setAttribute("aria-checked", String(b.dataset.modeBtn === mode));
     });
     renderMascot();
+    updateModelLabel();
     lsSet("dorati.mode", mode);
     if (!silent) addSystem(window.DORATI_KB.modeNotice[mode]);
   }
@@ -289,6 +313,8 @@
     var prevBot = state.lastBot;
     var pending = state.pendingAsk;
 
+    if (state.mode === "smart") { sendSmart(text, prevBot, pending); return; }
+
     state.busy = true;
     var trow = typingRow();
 
@@ -304,6 +330,87 @@
       trow.remove();
       state.busy = false;
       addBot("앗, 뭔가 꼬였어. 다시 말 걸어줘!");
+    });
+  }
+
+  /* ── 똑똑이 모드(제미나이) ─────────────────────────────── */
+  /* 제미나이 답변용 가벼운 마크다운: 코드블록·인라인코드·굵게·줄바꿈만 */
+  function mdRender(text) {
+    var codes = [];
+    var s = String(text || "");
+    s = s.replace(/```[a-zA-Z0-9+#-]*\n?([\s\S]*?)```/g, function (_, code) {
+      codes.push(code.replace(/^\n+|\n+$/g, ""));
+      return "\u0000C" + (codes.length - 1) + "\u0000";
+    });
+    s = escapeHtml(s);
+    s = s.replace(/`([^`\n]+)`/g, '<code class="inline">$1</code>');
+    s = s.replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>");
+    s = s.replace(/^\s*[-•*]\s+/gm, "· ");
+    s = s.replace(/\n{3,}/g, "\n\n").replace(/\n/g, "<br>");
+    s = s.replace(/\u0000C(\d+)\u0000/g, function (_, i) {
+      return '<pre class="code">' + escapeHtml(codes[Number(i)] || "") + "</pre>";
+    });
+    return s;
+  }
+
+  function smartHistory() {
+    /* 방금 넣은 사용자 말은 빼고, 직전 대화 최대 12개만 문맥으로 보낸다 */
+    var out = [];
+    var src = state.history.slice(-13, -1);
+    for (var i = 0; i < src.length; i++) {
+      var m = src[i];
+      var t = m.r === "u" ? m.t : String(m.h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      if (!t) continue;
+      out.push({ r: m.r === "u" ? "u" : "b", t: t.slice(0, 300) });
+    }
+    return out.slice(-12);
+  }
+
+  function sendSmart(text, prevBot, pending) {
+    state.busy = true;
+
+    /* 1) 로컬 하드 필터가 언제나 최우선 — 자살·자해 / 범죄 / 개인정보는 API로 보내지 않는다 */
+    var scan = window.Safety.scan(text);
+    if (!scan.safe) {
+      var notice = window.Safety.notice(scan.kind);
+      addBot(escapeHtml(notice).replace(/\n/g, "<br>"));
+      state.lastBot = { text: notice, learnable: false };
+      state.pendingAsk = null;
+      state.busy = false;
+      return;
+    }
+
+    if (!window.Smart || !window.Smart.enabled()) {
+      /* 중계 주소가 설정되지 않은 경우 */
+      fallbackToEngine(text, prevBot, pending, "제미나이 연결이 아직 준비 중이라 내장 답변으로 답했어요.");
+      return;
+    }
+
+    var trow = typingRow("도랏이가 생각 중");
+
+    window.Smart.ask(text, state.nick, smartHistory()).then(function (j) {
+      trow.remove();
+      addBot(mdRender(j.reply));
+      state.lastBot = { text: j.reply, learnable: false };
+      state.pendingAsk = null;
+      updateModelLabel();
+      state.busy = false;
+    }).catch(function () {
+      trow.remove();
+      fallbackToEngine(text, prevBot, pending, "제미나이 응답이 잠깐 막혀서 내장 답변으로 답했어요.");
+    });
+  }
+
+  function fallbackToEngine(text, prevBot, pending, note) {
+    Promise.resolve(window.Engine.answer(text, "normal", state.snap)).then(function (res) {
+      handleResult(res);
+      addSystem(note);
+      state.busy = false;
+      if (pending) autoLearn(pending, text);
+      else if (prevBot && prevBot.learnable) autoLearn(prevBot.text, text);
+    }).catch(function () {
+      addBot("앗, 뭔가 꼬였어. 다시 말 걸어줘!");
+      state.busy = false;
     });
   }
 
