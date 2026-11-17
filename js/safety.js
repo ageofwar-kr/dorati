@@ -93,7 +93,8 @@ window.Safety = (function () {
       var apply = mode === "clean" ? true : lv >= 3;
       if (!apply) continue;
       t = t.replace(new RegExp(PROFANITY[i][1].source, "g"), function (m) {
-        return m.length >= 3 ? "♡♡♡" : "♡♡";
+        var n = Math.min(m.length, 3);
+        return new Array(n + 1).join("*");
       });
     }
     return t;
