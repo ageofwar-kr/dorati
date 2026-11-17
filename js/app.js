@@ -6,7 +6,6 @@
   var form = document.getElementById("composer");
   var input = document.getElementById("input");
   var toast = document.getElementById("toast");
-  var countEl = document.getElementById("learned-count");
   var mascotEl = document.getElementById("mascot");
   var nickBadge = document.getElementById("nick-badge");
   var gate = document.getElementById("gate");
@@ -186,7 +185,6 @@
     toastTimer = setTimeout(function () { toast.hidden = true; }, 1900);
   }
 
-  function updateCount(n) { countEl.textContent = n.toLocaleString("ko-KR"); }
 
   /* ── 닉네임 ───────────────────────────────────────────── */
   function setNick(nick) {
@@ -434,12 +432,8 @@
     kakao();
 
     window.Store.init();
-    window.Store.subscribe(function (snap) {
-      state.snap = snap;
-      updateCount(snap.count);
-    });
+    window.Store.subscribe(function (snap) { state.snap = snap; });
     state.snap = window.Store.snapshot();
-    updateCount(state.snap.count);
 
     state.history = loadHistory();
     if (!restore()) {

@@ -260,3 +260,4 @@ body.gated #input{pointer-events:none}
 }
 #gate-start:disabled{opacity:.35; cursor:not-allowed}
 .gate-hint{margin:8px 0 0; font-size:11.5px; color:#d0522a; min-height:14px}
+.brand h1 .nick-badge{font-size:12px; font-weight:600; color:var(--text-dim); margin-left:2px}

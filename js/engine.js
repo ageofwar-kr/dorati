@@ -56,11 +56,13 @@ window.Engine = (function () {
   }
 
   /* ── 모드별 학습 항목 노출 규칙 ───────────────────────── */
+  /* 학습은 모든 모드가 하나의 풀을 공유한다.
+     모드에 따른 차이는 '출력 필터'(Safety.censor)에서만 생긴다.
+     하드 안전 필터(자살·범죄·개인정보)는 어떤 모드에서도 막는다. */
   function visible(e, mode) {
     if (!e || e.r >= 3) return false;
-    if (!window.Safety.allowedInMode(e.a, mode)) return false;
-    if (mode === "clean") return e.m === "clean";
-    if (mode === "normal") return e.m === "clean" || e.m === "normal";
+    if (window.Safety.scan(e.a).safe === false) return false;
+    if (window.Safety.scan(e.q).safe === false) return false;
     return true;
   }
 
