@@ -41,6 +41,7 @@ body{
 }
 
 /* ── 카톡 탈출 배너 ── */
+#kakao-banner[hidden]{display:none}
 #kakao-banner{
   display:flex; gap:8px; align-items:center; justify-content:center;
   padding:8px 12px; background:#fee500; color:#3c1e1e; font-size:12.5px; font-weight:600;
