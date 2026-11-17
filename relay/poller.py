@@ -75,20 +75,21 @@ def handle(reqs):
         return 0
     done = 0
     for key, val in reqs.items():
+        safe_key = urllib.parse.quote(key, safe="")
         word = (val or {}).get("q") or urllib.parse.unquote(key)
         word = str(word).strip()[:60]
         if not word:
-            http(f"{DB}/dictreq/{key}.json", "DELETE")
+            http(f"{DB}/dictreq/{safe_key}.json", "DELETE")
             continue
         res = stdict(word)
         if res and res.get("ok") and res.get("items"):
-            http(f"{DB}/dict/{key}.json", "PUT", res)
+            http(f"{DB}/dict/{safe_key}.json", "PUT", res)
             done += 1
         else:
             # 못 찾은 것도 캐시해 같은 요청을 반복하지 않게 한다
-            http(f"{DB}/dict/{key}.json", "PUT",
+            http(f"{DB}/dict/{safe_key}.json", "PUT",
                  {"ok": False, "word": word, "items": [], "ts": int(time.time() * 1000)})
-        http(f"{DB}/dictreq/{key}.json", "DELETE")
+        http(f"{DB}/dictreq/{safe_key}.json", "DELETE")
     return done
 
 
