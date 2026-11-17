@@ -232,7 +232,7 @@
     lsSet(NICK_KEY, state.nick);
     if (state.nick) {
       nickBadge.hidden = false;
-      nickBadge.textContent = " · " + state.nick;
+      nickBadge.textContent = " · " + withNim(state.nick);
     } else {
       nickBadge.hidden = true;
     }
@@ -323,9 +323,16 @@
   }
 
   /* ── 닉네임으로 부르기 ────────────────────────────────── */
-  /* 닉네임 뒤에는 어떤 글자도 붙이지 않는다(아/야/님 금지). 이름은 입력한 그대로, 뒤에는 쉼표만. */
+  /* 닉네임 뒤에는 항상 '님'을 붙인다(v1.7). 이미 '님'으로 끝나면 겹쳐 붙이지 않는다. 뒤에는 쉼표. */
+  function withNim(nick) {
+    var n = String(nick || "").trim();
+    if (!n) return "";
+    return /님$/.test(n) ? n : n + "님";
+  }
+
   function callName(nick, text) {
-    return nick + ", " + text;
+    var n = withNim(nick);
+    return n ? n + ", " + text : text;
   }
 
   function personalize(text) {
@@ -516,7 +523,7 @@
   document.getElementById("menu-export").addEventListener("click", function () {
     toggleMenu(false);
     var lines = state.history.map(function (m) {
-      var who = m.r === "u" ? (state.nick || "나") : (m.r === "b" ? "도랏이" : "안내");
+      var who = m.r === "u" ? (withNim(state.nick) || "나") : (m.r === "b" ? "도랏이" : "안내");
       var body = m.t || String(m.h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
       var d = new Date(m.ts || Date.now());
       var stamp = d.toLocaleString("ko-KR");
