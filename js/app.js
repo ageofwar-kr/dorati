@@ -511,7 +511,7 @@
     var html = escapeHtml(personalize(res.text))
       .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
     addBot(html, { entry: res.entry });
-    state.lastBot = { text: res.text, learnable: res.kind !== "safety" };
+    state.lastBot = { text: res.text, learnable: res.kind !== "safety" && res.kind !== "pureBlock" };
     state.pendingAsk = res.askTeachFor || null;
   }
 

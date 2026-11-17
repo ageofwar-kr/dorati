@@ -140,10 +140,20 @@ window.Engine = (function () {
   }
 
   /* ── 학습 데이터 매칭 ─────────────────────────────────── */
-  function visible(e) {
+  var PURE_DEFLECT_SET = Object.create(null);
+  (function () {
+    var arr = (KB.doratPureDeflect || []);
+    for (var i = 0; i < arr.length; i++) PURE_DEFLECT_SET[arr[i]] = 1;
+  })();
+
+  /* visible(e, mode): 신고 3회 이상·하드필터 위반은 숨긴다.
+     mode를 주면 갈래별로도 거른다 — 순수도랏은 성인 답변을, 미친도랏은 순수도랏 받아치기를 숨긴다. */
+  function visible(e, mode) {
     if (!e || e.r >= 3) return false;
     if (window.Safety.scan(e.a).safe === false) return false;
     if (window.Safety.scan(e.q).safe === false) return false;
+    if (mode === "dorat_pure" && isAdultLine(e.a)) return false;
+    if ((mode === "dorat" || mode === "dorat_crazy") && PURE_DEFLECT_SET[e.a]) return false;
     return true;
   }
 
@@ -162,17 +172,17 @@ window.Engine = (function () {
     return list[list.length - 1];
   }
 
-  function pickLearned(text, snap) {
+  function pickLearned(text, snap, mode) {
     var qn = normalize(text);
     if (!qn) return null;
     snap = snap || { pairs: [], byNorm: {} };
-    var exact = (snap.byNorm[qn] || []).filter(visible);
+    var exact = (snap.byNorm[qn] || []).filter(function (e) { return visible(e, mode); });
     if (exact.length) return { entry: weightedPick(exact), how: "exact" };
     if (qn.length < 3) return null;
     var best = 0, bucket = [];
     for (var i = 0; i < snap.pairs.length; i++) {
       var e = snap.pairs[i];
-      if (!visible(e)) continue;
+      if (!visible(e, mode)) continue;
       if (!e.qn || e.qn.length < 3) continue;
       if (Math.abs(e.qn.length - qn.length) > Math.max(6, qn.length)) continue;
       var d = dice(qn, e.qn);
@@ -540,7 +550,7 @@ window.Engine = (function () {
     /* 3) 정식 사전 질문 (뜻·의미·사전) */
     var target = dictTarget(text);
     if (target) {
-      var learnedDict = pickLearned(text, snap);
+      var learnedDict = pickLearned(text, snap, mode);
       return {
         type: "dictQuery",
         target: target,
@@ -552,7 +562,7 @@ window.Engine = (function () {
     }
 
     /* 4) 학습된 말 (사용자가 직접 가르친 것) */
-    var learned = pickLearned(text, snap);
+    var learned = pickLearned(text, snap, mode);
     if (learned) {
       return {
         type: "text",
@@ -596,7 +606,12 @@ window.Engine = (function () {
 
     /* 9) 내장 의도 */
     var it = matchIntent(t);
-    if (it) return { type: "text", text: intentReply(it, mode), intent: it.id, how: "intent" };
+    if (it) {
+      var rep = { type: "text", text: intentReply(it, mode), intent: it.id, how: "intent" };
+      /* 순수도랏에서 19금 의도를 받아친 답변은 학습 대상으로 삼지 않는다(미친도랏 오염 방지) */
+      if (mode === "dorat_pure" && ADULT_IDS[it.id]) rep.kind = "pureBlock";
+      return rep;
+    }
 
     /* 10) 의문사 패턴 */
     if (/왜/.test(t)) return { type: "text", text: whAnswer("why", mode), intent: "pat:why", how: "pattern" };
