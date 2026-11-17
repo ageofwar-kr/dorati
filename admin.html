@@ -405,8 +405,8 @@
     if (builtin.loaded) return Promise.resolve();
     if (builtin.loading) return builtin.loading;
     document.getElementById("b-list").innerHTML = '<div class="empty">내장 대화를 불러오는 중…</div>';
-    builtin.loading = loadScript("./js/kb-dialogues.js?v=2.5")
-      .then(function () { return loadScript("./js/kb-corpus.js?v=2.5"); })
+    builtin.loading = loadScript("./js/kb-dialogues.js?v=2.6")
+      .then(function () { return loadScript("./js/kb-corpus.js?v=2.6"); })
       .then(function () {
         var C = window.DORATI_CORPUS || { intents: [], pairs: [] };
         builtin.items = [];
