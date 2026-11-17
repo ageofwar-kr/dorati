@@ -361,3 +361,36 @@ body[data-theme="dark"][data-mode="dorat"][data-flavor="crazy"]{
   .flavor{padding:5px 10px 0; gap:5px}
   .flavor button{font-size:11px; padding:3.5px 10px}
 }
+
+/* ── 미친도랏 진입 경고 (가볍게 떠 있는 작은 카드) ── */
+.warn{
+  position:fixed; inset:0; z-index:60;
+  display:flex; align-items:center; justify-content:center;
+  padding:20px; background:rgba(22,12,26,.42);
+  backdrop-filter:blur(2px);
+}
+.warn[hidden]{display:none}
+.warn-card{
+  width:100%; max-width:330px; background:var(--panel); color:var(--text);
+  border:1px solid var(--line); border-radius:16px;
+  padding:16px 16px 14px; box-shadow:0 12px 34px rgba(0,0,0,.22);
+}
+.warn-card h2{
+  margin:0 0 6px; font-size:15px; font-weight:800; letter-spacing:-.01em; color:var(--accent);
+}
+.warn-card p{margin:0; font-size:12.5px; line-height:1.55; color:var(--text-dim)}
+.warn-act{display:flex; gap:8px; margin-top:14px}
+.warn-act button{
+  appearance:none; cursor:pointer; font:inherit; font-size:12.5px; font-weight:800;
+  border-radius:999px; padding:8px 12px; flex:1 1 0; border:1px solid var(--line);
+  background:transparent; color:var(--text-dim); transition:all .16s ease;
+}
+.warn-no:hover{color:var(--text); border-color:var(--text-dim)}
+.warn-yes{background:var(--accent); border-color:transparent; color:#fff}
+.warn-yes:hover{filter:brightness(1.06)}
+body.warned{overflow:hidden}
+@media (max-width:430px){
+  .warn-card{max-width:310px; padding:14px 14px 12px}
+  .warn-card p{font-size:12px}
+  .warn-act button{font-size:12px; padding:8px 10px}
+}

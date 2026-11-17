@@ -277,6 +277,50 @@
   }
 
   var flavorBar = document.getElementById("flavor");
+  var warnBox = document.getElementById("warn");
+  var warnOk = document.getElementById("warn-ok");
+  var warnCancel = document.getElementById("warn-cancel");
+  var OK_KEY = "dorati.dorat19ok";
+
+  function confirmed19() {
+    try { return localStorage.getItem(OK_KEY) === "1"; } catch (e) { return false; }
+  }
+  function remember19() { lsSet(OK_KEY, "1"); }
+
+  function openWarn() {
+    if (!warnBox) return;
+    warnBox.hidden = false;
+    document.body.classList.add("warned");
+    if (warnCancel) warnCancel.focus();
+  }
+  function closeWarn() {
+    if (!warnBox) return;
+    warnBox.hidden = true;
+    document.body.classList.remove("warned");
+  }
+  if (warnOk) warnOk.addEventListener("click", function () {
+    remember19();
+    closeWarn();
+    setFlavor("crazy");
+    if (input) input.focus();
+  });
+  if (warnCancel) warnCancel.addEventListener("click", function () {
+    closeWarn();
+    if (input) input.focus();
+  });
+  if (warnBox) warnBox.addEventListener("click", function (e) {
+    if (e.target === warnBox) closeWarn();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && warnBox && !warnBox.hidden) closeWarn();
+  });
+
+  /* 미친도랏은 19세 동의를 한 번 받은 뒤에만 켠다 */
+  function requestFlavor(flavor) {
+    if (flavor === "crazy" && !confirmed19()) { openWarn(); return false; }
+    setFlavor(flavor);
+    return true;
+  }
 
   function renderFlavor() {
     if (!flavorBar) return;
@@ -296,7 +340,7 @@
 
   if (flavorBar) {
     flavorBar.querySelectorAll("[data-flavor-btn]").forEach(function (b) {
-      b.addEventListener("click", function () { setFlavor(b.dataset.flavorBtn); input.focus(); });
+      b.addEventListener("click", function () { requestFlavor(b.dataset.flavorBtn); input.focus(); });
     });
   }
 
@@ -493,6 +537,10 @@
   function handleResult(res) {
     if (!res) return;
     if (res.type === "mode") {
+      if (res.mode === "dorat" && res.flavor === "crazy" && !confirmed19()) {
+        openWarn();
+        return;
+      }
       if (res.mode === "dorat" && res.flavor) {
         setFlavor(res.flavor, true);
       }
@@ -609,7 +657,8 @@
   function boot() {
     applyTheme(lsGet(THEME_KEY) || "light");
     var savedMode = lsGet("dorati.mode");
-    setFlavor(lsGet(FLAVOR_KEY) || "pure", true);
+    var savedFlavor = lsGet(FLAVOR_KEY) || "pure";
+    setFlavor(savedFlavor === "crazy" && !confirmed19() ? "pure" : savedFlavor, true);
     setMode(savedMode || "normal", true);
     var savedNick = lsGet(NICK_KEY) || "";
     if (savedNick) setNick(savedNick);

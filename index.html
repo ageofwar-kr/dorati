@@ -26,7 +26,7 @@
 </script>
 <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="https://ageofwar-kr.github.io/dorati/assets/og.png">
-<link rel="stylesheet" href="./css/style.css?v=3.3">
+<link rel="stylesheet" href="./css/style.css?v=3.4">
 </head>
 <body data-mode="normal" data-theme="light" data-flavor="pure">
 
@@ -85,6 +85,18 @@
   </div>
 </div>
 
+<!-- 미친도랏 진입 경고 (한 번 동의하면 이 브라우저에서는 다시 묻지 않음) -->
+<div id="warn" class="warn" hidden>
+  <div class="warn-card" role="dialog" aria-modal="true" aria-labelledby="warn-title">
+    <h2 id="warn-title">🔞 미친도랏 주의</h2>
+    <p id="warn-body">미친도랏 모드는 거친 쌍욕과 노골적인 19금 성인 드립이 포함되어 있습니다.<br>만 19세 이상이며 이에 동의하시겠습니까?</p>
+    <div class="warn-act">
+      <button type="button" id="warn-cancel" class="warn-no">취소</button>
+      <button type="button" id="warn-ok" class="warn-yes">동의하고 켜기</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast" hidden></div>
 
 <form id="composer" class="composer" autocomplete="off">
@@ -99,15 +111,15 @@
   <span class="ver">v1.8</span>
 </footer>
 
-<script src="./js/config.js?v=3.3"></script>
-<script src="./js/safety.js?v=3.3"></script>
-<script src="./js/smart.js?v=3.3"></script>
-<script src="./js/kb-wiktionary.js?v=3.3"></script>
-<script src="./js/kb-dialogues.js?v=3.3"></script>
-<script src="./js/kb-corpus.js?v=3.3"></script>
-<script src="./js/store.js?v=3.3"></script>
-<script src="./js/dict.js?v=3.3"></script>
-<script src="./js/engine.js?v=3.3"></script>
-<script src="./js/app.js?v=3.3"></script>
+<script src="./js/config.js?v=3.4"></script>
+<script src="./js/safety.js?v=3.4"></script>
+<script src="./js/smart.js?v=3.4"></script>
+<script src="./js/kb-wiktionary.js?v=3.4"></script>
+<script src="./js/kb-dialogues.js?v=3.4"></script>
+<script src="./js/kb-corpus.js?v=3.4"></script>
+<script src="./js/store.js?v=3.4"></script>
+<script src="./js/dict.js?v=3.4"></script>
+<script src="./js/engine.js?v=3.4"></script>
+<script src="./js/app.js?v=3.4"></script>
 </body>
 </html>
