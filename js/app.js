@@ -282,12 +282,15 @@
   }
 
   /* ── 닉네임으로 부르기 ────────────────────────────────── */
+  /* 닉네임 뒤에는 어떤 글자도 붙이지 않는다(아/야/님 금지). 이름은 입력한 그대로, 뒤에는 쉼표만. */
+  function callName(nick, text) {
+    return nick + ", " + text;
+  }
+
   function personalize(text) {
     if (!state.nick || Math.random() > 0.22) return text;
     if (/[?？]$/.test(text)) return text;
-    if (state.mode === "clean") return state.nick + "님, " + text;
-    if (state.mode === "dorat") return text + " " + state.nick + "아.";
-    return state.nick + "아, " + text;
+    return callName(state.nick, text);
   }
 
   /* ── 전송 ─────────────────────────────────────────────── */
@@ -346,7 +349,7 @@
     var intro = window.DORATI_KB.intro[state.mode];
     var text = intro[Math.floor(Math.random() * intro.length)];
     var msg = state.nick && Math.random() > 0.5
-      ? state.nick + "아, " + text
+      ? callName(state.nick, text)
       : text;
     setTimeout(function () {
       addBot(escapeHtml(msg));
