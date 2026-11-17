@@ -279,13 +279,15 @@
      미친도랏은 화면에 버튼이 없다. 정해진 주문을넣으면 켜지고,
      켜져 있는 동안에만 헤더 아래에 끄기 필이 조용히 나타난다. */
   var eggOffBtn = document.getElementById("egg-off");
-  var EGG_RE = /미친\s*도랏이?\s*커\s*몬/;
+  /* 주문 두 가지: "미친도랏이커몬" / "미친도랏모드" — 띄어쓰기는 어디에 있어도 좋다 */
+  var EGG_RES = [/미친\s*도랏이?\s*커\s*몬/, /미친\s*도랏\s*모드/];
 
-  /* "미친도랏이커몬" — 띄어쓰기가 어디에 들어가도 받아준다 */
   function isEggTrigger(text) {
     var raw = String(text || "");
-    if (EGG_RE.test(raw)) return true;
-    return /미친도랏이?커몬/.test(raw.replace(/\s+/g, ""));
+    for (var i = 0; i < EGG_RES.length; i++) {
+      if (EGG_RES[i].test(raw)) return true;
+    }
+    return /미친도랏이?커몬|미친도랏모드/.test(raw.replace(/\s+/g, ""));
   }
 
   function renderFlavor() {

@@ -1,4 +1,4 @@
-/* 도랏이 대화 엔진 v1.5 — 정규화 / 인덱스 매칭 / 문장 패턴 / 사전질문 / 모드별 답변
+/* 도랏이 대화 엔진 v1.9 — 정규화 / 인덱스 매칭 / 문장 패턴 / 사전질문 / 모드별 답변
    · 내장 코퍼스(kb-corpus.js) 275개 의도 × 3모드 × 3답변 + 46개 Q&A쌍 × 3모드 × 3답변
    · 정확 일치 Map → 의도 정규식(문자 인덱스 프리필터) → 문장 패턴 → 사전 → dice 유사도 순
    · 같은 말을 반복해도 답이 겹치지 않도록 최근 답변 회피 */
@@ -736,7 +736,7 @@ window.Engine = (function () {
   }
 
   return {
-    version: "1.8",
+    version: "1.9",
     isAdultLine: isAdultLine,
     normalize: normalize,
     dice: dice,

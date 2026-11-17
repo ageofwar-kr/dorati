@@ -95,21 +95,26 @@ check("eggBanner 제목·부제 있음", bool(bn.get("title")) and bool(bn.get("
 check("eggHint 2개 이상", len(eh) >= 2, len(eh))
 check("eggHint가 주문을 그대로 알려주지 않음", not any("커몬" in s for s in eh), eh)
 
-print("7) 주문 매칭(앱 규칙) 재현")
-pat = re.compile(r"미친\s*도랏이?\s*커\s*몬")
+print("7) 주문 매칭(앱 규칙) 재현 — 두 가지 주문")
+INCANT = re.compile(r"미친\s*도랏이?\s*커\s*몬")
+MODEALIAS = re.compile(r"미친\s*도랏\s*모드")
 def trig(t):
-    if pat.search(t):
+    if INCANT.search(t) or MODEALIAS.search(t):
         return True
-    return re.search(r"미친도랏이?커몬", re.sub(r"\s+", "", t)) is not None
+    return re.search(r"미친도랏이?커몬|미친도랏모드", re.sub(r"\s+", "", t)) is not None
 cases = {
     "미친도랏이커몬": True,
     "미친 도랏 이 커몬": True,
     "미친도랏 커몬": True,
     "미친도랏이 커몬!": True,
     "미친도랏 커몬해줘": True,
+    "미친도랏모드": True,
+    "미친 도랏 모드": True,
+    "미친도랏모드 가자": True,
     "미친도랏이커": False,
     "커몬": False,
     "미친도랏": False,
+    "미친도랏모": False,
 }
 for t, want in cases.items():
     check("trigger(%r) == %s" % (t, want), trig(t) == want, trig(t))
