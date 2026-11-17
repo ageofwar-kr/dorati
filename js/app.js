@@ -58,8 +58,8 @@
     if (mode === "dorat") {
       /* 도랏: 게슴츠레한 눈 + 일자 입 */
       eyes =
-        '<path d="M31 45l13 5" stroke="' + g.ink + '" stroke-width="6" stroke-linecap="round"/>' +
-        '<path d="M69 45l-13 5" stroke="' + g.ink + '" stroke-width="6" stroke-linecap="round"/>';
+        '<path d="M32 47h12" stroke="' + g.ink + '" stroke-width="6" stroke-linecap="round"/>' +
+        '<path d="M56 47h12" stroke="' + g.ink + '" stroke-width="6" stroke-linecap="round"/>';
       mouth = '<path d="M42 63h16" stroke="' + g.ink + '" stroke-width="6" stroke-linecap="round"/>';
     } else {
       eyes =
