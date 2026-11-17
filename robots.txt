@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# 관리자 화면은 검색에 노출하지 않습니다.
+Disallow: /admin.html
+
+Sitemap: https://ageofwar-kr.github.io/dorati/sitemap.xml
