@@ -81,7 +81,7 @@ window.Store = (function () {
   }
 
   function fetchAll() {
-    return fetch(DB + "/pairs.json?print=silent", { cache: "no-store" })
+    return fetch(DB + "/pairs.json", { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (obj) {
         var list = fromFirebase(obj);

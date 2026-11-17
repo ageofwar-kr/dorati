@@ -96,7 +96,7 @@ window.Dict = (function () {
   /* 공용 DB 캐시 + 요청 큐 */
   function fromShared(word) {
     var key = encodeURIComponent(word);
-    return fetch(DB + "/dict/" + key + ".json?print=silent", { cache: "no-store" })
+    return fetch(DB + "/dict/" + key + ".json", { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (v) {
         if (v && v.items && v.items.length) {

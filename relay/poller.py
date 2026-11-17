@@ -101,7 +101,7 @@ def main():
     print(f"relay start · {RUN_FOR}s", flush=True)
     while time.time() < deadline:
         try:
-            reqs = http(f"{DB}/dictreq.json?print=silent")
+            reqs = http(f"{DB}/dictreq.json")
         except Exception as e:
             print("read fail", e, flush=True)
             time.sleep(POLL_EVERY)
