@@ -65,7 +65,7 @@ window.Smart = (function () {
   }
 
   function ask(text, nick, history) {
-    return post({ action: "chat", text: text, nick: nick || "", history: history || [] }, 25000)
+    return post({ action: "chat", text: text, nick: nick || "", history: history || [] }, 45000)
       .then(function (j) {
         if (!j || !j.ok || !j.reply) throw new Error((j && j.error) || "empty");
         setModel(j.model);
