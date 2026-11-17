@@ -671,7 +671,7 @@ window.Engine = (function () {
   }
 
   return {
-    version: "1.5",
+    version: "1.8",
     normalize: normalize,
     dice: dice,
     dictTarget: dictTarget,
