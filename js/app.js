@@ -153,6 +153,7 @@
   function addUser(text, record) {
     var row = el("div", "row user");
     row.appendChild(el("div", "bubble", escapeHtml(text)));
+    if (record !== false) row.classList.add("in");
     chat.appendChild(row);
     scrollDown();
     if (record !== false) { state.history.push({ r: "u", t: text, ts: Date.now() }); saveHistory(); }
@@ -188,6 +189,7 @@
     }
     row.appendChild(av);
     row.appendChild(wrap);
+    if (opts.record !== false) row.classList.add("in");
     chat.appendChild(row);
     scrollDown();
     if (opts.record !== false) {
@@ -198,13 +200,15 @@
   }
 
   function addSystem(text, record) {
-    chat.appendChild(el("div", "sys", escapeHtml(text)));
+    var n = el("div", "sys", escapeHtml(text));
+    if (record !== false) n.classList.add("in");
+    chat.appendChild(n);
     scrollDown();
     if (record !== false) { state.history.push({ r: "s", t: text, ts: Date.now() }); saveHistory(); }
   }
 
   function typingRow(label) {
-    var row = el("div", "row bot");
+    var row = el("div", "row bot typing");
     var av = el("div", "avatar");
     av.innerHTML = mascotSVG(state.mode);
     row.appendChild(av);
@@ -212,6 +216,7 @@
       (label ? '<span class="typing-label">' + escapeHtml(label) + '</span>' : '') +
       '<span class="typing"><i></i><i></i><i></i></span></span>';
     row.appendChild(el("div", "bubble", inner));
+    row.classList.add("in");
     chat.appendChild(row);
     scrollDown();
     return row;
@@ -348,6 +353,7 @@
     updateModelLabel();
     renderFlavor();
     lsSet("dorati.mode", mode);
+    requestAnimationFrame(function () { placeGlider(); });
     if (!silent) {
       addSystem(window.DORATI_KB.modeNotice[mode]);
       if (mode === "dorat" && state.flavor === "crazy") addSystem(window.DORATI_KB.flavorNotice.crazy);
@@ -362,6 +368,31 @@
       setMode(m);
     });
   });
+
+  /* ── 모드 선택 판(glider) ─────────────────────────────
+     선택 표시를 버튼 배경이 아니라 '미끄러지는 판' 하나로 그린다(iOS 세그먼트 컨트로르). */
+  var modesBar = document.querySelector(".modes");
+  var modeGlider = document.querySelector(".mode-glider");
+
+  function placeGlider(animate) {
+    if (!modesBar || !modeGlider) return;
+    var btn = modesBar.querySelector('[data-mode-btn][aria-checked="true"]');
+    if (!btn) return;
+    var br = modesBar.getBoundingClientRect();
+    var r = btn.getBoundingClientRect();
+    if (!r.width) return;
+    if (animate === false) modeGlider.classList.add("no-anim");
+    modeGlider.style.width = r.width + "px";
+    modeGlider.style.transform = "translate3d(" + (r.left - br.left) + "px,0,0)";
+    if (animate === false) {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { modeGlider.classList.remove("no-anim"); });
+      });
+    }
+  }
+
+  window.addEventListener("resize", function () { placeGlider(true); });
+  window.addEventListener("load", function () { placeGlider(false); });
 
   /* ── 사전 카드 ────────────────────────────────────────── */
   function cardHTML(card, intro) {
@@ -663,6 +694,7 @@
     setMode(savedMode || "normal", true);
     var savedNick = lsGet(NICK_KEY) || "";
     if (savedNick) setNick(savedNick);
+    placeGlider(false);
     kakao();
 
     window.Store.init();

@@ -54,7 +54,7 @@ body{
   font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
   font-size:15px; line-height:1.45;
   display:flex; flex-direction:column;
-  transition:background .25s ease;
+  transition:background .36s cubic-bezier(.22,1,.36,1), color .26s cubic-bezier(.22,1,.36,1);
   overscroll-behavior-y:contain;
 }
 
@@ -74,6 +74,7 @@ body{
   background:color-mix(in srgb, var(--panel) 92%, transparent);
   backdrop-filter:saturate(140%) blur(10px);
   border-bottom:1px solid var(--line);
+  transition:background .34s cubic-bezier(.22,1,.36,1), border-color .34s cubic-bezier(.22,1,.36,1);
 }
 .brand{display:flex; align-items:center; gap:9px; min-width:0}
 .mascot{width:38px; height:38px; flex:0 0 38px; transition:transform .3s}
@@ -96,15 +97,27 @@ body[data-mode="dorat"] .mascot{animation:wiggle 1.6s ease-in-out infinite}
   appearance:none; cursor:pointer; flex:0 0 auto;
   border:1px solid var(--line); background:var(--panel); color:var(--text-dim);
   border-radius:999px; padding:5px 10px; font:inherit; font-size:11.5px; font-weight:800;
-  letter-spacing:-.01em; white-space:nowrap; transition:color .16s, border-color .16s;
+  letter-spacing:-.01em; white-space:nowrap;
+  transition:color .26s cubic-bezier(.22,1,.36,1), border-color .26s cubic-bezier(.22,1,.36,1), transform .18s cubic-bezier(.22,1,.36,1);
 }
 .theme-btn:hover{color:var(--accent); border-color:var(--accent)}
+.theme-btn:active{transform:scale(.94)}
 .theme-btn[aria-pressed="true"]{color:var(--accent); border-color:color-mix(in srgb, var(--accent) 45%, var(--line))}
 
 .modes{
-  display:flex; padding:3px; gap:2px;
+  display:flex; padding:3px; gap:2px; position:relative;
   background:var(--bot); border-radius:999px; flex:0 0 auto;
+  transition:background .34s cubic-bezier(.22,1,.36,1);
 }
+/* 선택 표시는 '미끄러지는 판' 하나가 담당한다 (iOS 세그먼트 컨트롤 느낌) */
+.mode-glider{
+  position:absolute; top:3px; bottom:3px; left:0; width:0;
+  border-radius:999px; background:var(--panel);
+  box-shadow:0 1px 4px rgba(0,0,0,.09);
+  transform:translate3d(0,0,0); will-change:transform,width; pointer-events:none;
+  transition:transform .46s cubic-bezier(.22,1,.36,1), width .46s cubic-bezier(.22,1,.36,1), background .34s cubic-bezier(.22,1,.36,1);
+}
+.mode-glider.no-anim{transition:none}
 /* 모드 버튼 바로 위, 아주 작은 모델명 — 똑똑이 모드일 때만 보인다 */
 .modes-wrap{display:flex; flex-direction:column; align-items:flex-end; gap:1px; flex:0 0 auto; min-width:0}
 .mode-model{
@@ -114,15 +127,14 @@ body[data-mode="dorat"] .mascot{animation:wiggle 1.6s ease-in-out infinite}
 }
 .mode-model[hidden]{display:none}
 .mode{
-  appearance:none; border:0; background:transparent; cursor:pointer;
+  appearance:none; border:0; background:transparent; cursor:pointer; position:relative; z-index:1;
   font:inherit; font-size:12.5px; font-weight:700; color:var(--text-dim);
-  padding:5px 11px; border-radius:999px; transition:all .18s ease;
+  padding:5px 11px; border-radius:999px;
+  transition:color .26s cubic-bezier(.22,1,.36,1), transform .18s cubic-bezier(.22,1,.36,1);
   white-space:nowrap;
 }
-.mode[aria-checked="true"]{
-  background:var(--panel); color:var(--accent);
-  box-shadow:0 1px 4px rgba(0,0,0,.09);
-}
+.mode:active{transform:scale(.94)}
+.mode[aria-checked="true"]{color:var(--accent)}
 
 /* ── 채팅 ── */
 .chat{
@@ -140,9 +152,13 @@ body[data-mode="dorat"] .mascot{animation:wiggle 1.6s ease-in-out infinite}
 .bubble{
   max-width:min(76%, 560px); padding:9px 13px; border-radius:var(--radius);
   white-space:pre-wrap; word-break:break-word; box-shadow:var(--shadow);
-  animation:pop .18s ease-out;
+  transition:background .34s cubic-bezier(.22,1,.36,1);
 }
-@keyframes pop{from{opacity:0; transform:translateY(4px) scale(.98)} to{opacity:1; transform:none}}
+/* 새로 오가는 말풍선만 iMessage처럼 살짝 튀어오른다 (복원된 옛 대화는 조용히) */
+.row.in{animation:msgIn .44s cubic-bezier(.22,1,.36,1) both}
+.row.user.in{animation-name:msgInRight}
+@keyframes msgIn{from{opacity:0; transform:translateY(10px) scale(.96)} to{opacity:1; transform:none}}
+@keyframes msgInRight{from{opacity:0; transform:translateY(8px) translateX(10px) scale(.97)} to{opacity:1; transform:none}}
 .row.bot .bubble{background:var(--bot); border-bottom-left-radius:6px}
 .row.user .bubble{background:var(--user); color:var(--user-text); border-bottom-right-radius:6px}
 .bubble a{color:inherit}
@@ -167,12 +183,15 @@ body[data-mode="dorat"] .mascot{animation:wiggle 1.6s ease-in-out infinite}
 .fb button{
   appearance:none; border:0; background:transparent; cursor:pointer;
   font-size:12px; padding:1px 4px; border-radius:8px; line-height:1.2;
+  transition:transform .18s cubic-bezier(.22,1,.36,1), background .2s;
 }
+.fb button:active{transform:scale(.9)}
 .fb button:hover{background:var(--accent-soft)}
 .fb button[data-on="1"]{opacity:1; transform:scale(1.15)}
 .fb .cnt{font-size:10px; color:var(--text-dim); align-self:center; min-width:8px}
 
 /* 타이핑 */
+.row.typing .bubble{transition:none}
 .typing-wrap{display:inline-flex; align-items:center; gap:8px}
 .typing-label{font-size:12px; color:var(--text-dim)}
 .typing{display:inline-flex; gap:3px; align-items:center; height:18px}
@@ -189,8 +208,10 @@ body[data-mode="dorat"] .mascot{animation:wiggle 1.6s ease-in-out infinite}
   align-self:center; font-size:11.5px; color:var(--text-dim);
   background:var(--accent-soft); color:var(--accent);
   padding:4px 11px; border-radius:999px; font-weight:600;
-  animation:pop .18s ease-out;
+  transition:background .34s cubic-bezier(.22,1,.36,1), color .34s cubic-bezier(.22,1,.36,1);
 }
+.sys.in{animation:sysIn .4s cubic-bezier(.22,1,.36,1) both}
+@keyframes sysIn{from{opacity:0; transform:translateY(-5px) scale(.97)} to{opacity:1; transform:none}}
 
 /* ── 토스트 ── */
 .toast{
@@ -208,21 +229,22 @@ body[data-mode="dorat"] .mascot{animation:wiggle 1.6s ease-in-out infinite}
   padding:8px 12px; padding-bottom:calc(8px + env(safe-area-inset-bottom));
   background:var(--panel); border-top:1px solid var(--line);
   position:sticky; bottom:0; z-index:20;
+  transition:background .34s cubic-bezier(.22,1,.36,1), border-color .34s cubic-bezier(.22,1,.36,1), opacity .24s;
 }
 #input{
   flex:1 1 auto; min-width:0;
   border:1px solid var(--line); background:var(--bg); color:var(--text);
   border-radius:999px; padding:11px 15px; font:inherit; font-size:15px;
-  outline:none; transition:border-color .18s, box-shadow .18s;
+  outline:none; transition:border-color .22s cubic-bezier(.22,1,.36,1), box-shadow .22s cubic-bezier(.22,1,.36,1), background .34s cubic-bezier(.22,1,.36,1);
 }
 #input:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
 #input::placeholder{color:var(--text-dim)}
 #send{
   flex:0 0 40px; width:40px; height:40px; border-radius:50%; border:0; cursor:pointer;
   background:var(--accent); color:#fff; display:grid; place-items:center;
-  transition:transform .12s, opacity .2s;
+  transition:transform .18s cubic-bezier(.22,1,.36,1), opacity .2s, background .34s cubic-bezier(.22,1,.36,1);
 }
-#send:active{transform:scale(.94)}
+#send:active{transform:scale(.9)}
 #send svg{fill:currentColor}
 
 /* ── 푸터 ── */
@@ -254,7 +276,9 @@ body[data-mode="dorat"] .mascot{animation:wiggle 1.6s ease-in-out infinite}
   appearance:none; border:0; background:transparent; cursor:pointer;
   width:28px; height:28px; border-radius:50%; color:var(--text-dim);
   font-size:18px; line-height:1; font-weight:700; padding:0;
+  transition:background .2s cubic-bezier(.22,1,.36,1), color .2s, transform .18s cubic-bezier(.22,1,.36,1);
 }
+.menu-btn:active{transform:scale(.9)}
 .menu-btn:hover{background:var(--bot); color:var(--text)}
 .menu{
   position:absolute; top:calc(100% - 4px); right:14px; z-index:40;
@@ -280,8 +304,9 @@ body.gated #input{pointer-events:none}
 .gate-card{
   width:100%; max-width:342px; background:var(--panel); border-radius:24px;
   padding:26px 22px 20px; text-align:center; box-shadow:0 20px 50px rgba(30,20,10,.22);
-  animation:pop .2s ease-out;
+  animation:cardIn .42s cubic-bezier(.22,1,.36,1) both;
 }
+@keyframes cardIn{from{opacity:0; transform:translateY(12px) scale(.97)} to{opacity:1; transform:none}}
 .gate-mascot{width:76px; height:76px; margin:0 auto 10px}
 .gate-mascot svg{width:100%; height:100%}
 .gate-card h2{margin:0 0 6px; font-size:19px; letter-spacing:-.02em}
@@ -294,8 +319,10 @@ body.gated #input{pointer-events:none}
 #gate-input:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
 #gate-start{
   border:0; border-radius:12px; padding:12px; font:inherit; font-size:15px; font-weight:800;
-  background:var(--accent); color:#fff; cursor:pointer; transition:opacity .15s;
+  background:var(--accent); color:#fff; cursor:pointer;
+  transition:opacity .15s, transform .18s cubic-bezier(.22,1,.36,1), background .34s cubic-bezier(.22,1,.36,1);
 }
+#gate-start:active:not(:disabled){transform:scale(.96)}
 #gate-start:disabled{opacity:.35; cursor:not-allowed}
 .gate-hint{margin:8px 0 0; font-size:11.5px; color:#d0522a; min-height:14px}
 .brand h1 .nick-badge{font-size:12px; font-weight:600; color:var(--text-dim); margin-left:2px}
@@ -339,8 +366,12 @@ body.gated #input{pointer-events:none}
   font-size:11px; font-weight:800; letter-spacing:-.01em;
   color:#b8174f; background:transparent;
   border:1px solid rgba(194,24,91,.32); border-radius:999px;
-  opacity:.85; transition:all .16s ease; flex:0 0 auto;
+  opacity:.85; flex:0 0 auto;
+  transition:background .26s cubic-bezier(.22,1,.36,1), border-color .26s cubic-bezier(.22,1,.36,1), transform .18s cubic-bezier(.22,1,.36,1), color .26s;
+  animation:pillIn .38s cubic-bezier(.22,1,.36,1) both;
 }
+.egg-off:not([hidden]):active{transform:scale(.94)}
+@keyframes pillIn{from{opacity:0; transform:translateY(-7px) scale(.94)} to{opacity:.85; transform:none}}
 .egg-off:hover{opacity:1; background:rgba(194,24,91,.07); border-color:rgba(194,24,91,.6)}
 body[data-theme="dark"] .egg-off{color:#ff8fb4; border-color:rgba(255,111,156,.35)}
 body[data-theme="dark"] .egg-off:hover{background:rgba(255,111,156,.1); border-color:rgba(255,111,156,.65)}
