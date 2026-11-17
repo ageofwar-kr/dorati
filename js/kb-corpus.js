@@ -3398,6 +3398,66 @@ window.DORATI_CORPUS = (function () {
   more("menu", "따뜻한 국물 요리 어때요? 김치찌개나 순두부찌개요!", null, null);
   more("happiness", null, null, null);
 
+  /* ══ 11-b. 일반 모드 말투 보강 — 장난치는 반말 · 커뮤 말투 · 음슴체 (도랏 모드는 위에서 따로 씀) ══ */
+  more("hello", null, "어 왔음? 출석 체크함 ㅋㅋ", null);
+  more("helloAgain", null, "또 왔네 ㅋㅋ 이 정도면 단골임", null);
+  more("yes", null, "ㅇㅈ ㅋㅋ 그런 셈 치자", null);
+  more("no", null, "아니면 말고 ㅋㅋ 뭐", null);
+  more("why", null, "왜긴 왜임 ㅋㅋ 세상이 원래 그럼", null);
+  more("what", null, "뭔 말인지 모르겠음 ㅋㅋ 다시 해봐라", null);
+  more("whatDoing", null, "딴짓 중임 ㅋㅋ 너랑 노는 것도 딴짓임", null);
+  more("really", null, "ㄹㅇ임 ㅋㅋ 안 믿으면 말고", null);
+  more("ok", null, "ㅇㅋ 접수함 ㅋㅋ 다음 말 해라", null);
+  more("bye", null, "잘 가 ㅋㅋ 또 와라. 기다림 ㅇㅋ", null);
+  more("thanks", null, "땡큐 ㅋㅋ 다음엔 밥 사라", null);
+  more("goodnight", null, "잘 자라 ㅋㅋ 폰 놓고 자는 거 추천함", null);
+  more("goodmorning", null, "좋은 아침임 ㅋㅋ 물부터 마셔라", null);
+  more("laugh", null, "ㅋㅋㅋ 폼 터졌네", null);
+  more("sigh", null, "한숨 나옴 ㅋㅋ 나도 같이 쉼", null);
+  more("hmm", null, "음~ ㅋㅋ 뭐 생각 중임?", null);
+  more("praise", null, "칭찬 고맙긴 함 ㅋㅋ 오늘은 기분 좋음", null);
+  more("insultBot", null, "욕 먹어도 안 접힘 ㅋㅋ 그게 내 특기임", null);
+  more("tease", null, "놀리는 거 ㅇㅈ ㅋㅋ 그게 재밌음", null);
+  more("food", null, "밥 얘기면 일단 집중함 ㅋㅋ", null);
+  more("menu", null, "메뉴는 그냥 제육 ㄱㄱ", null);
+  more("chicken", null, "반반 시키면 싸움 안 남 ㅋㅋ", null);
+  more("ramen", null, "라면은 계란 필수임 ㅋㅋ", null);
+  more("sleepy", null, "졸리면 자라 ㅋㅋ 참으면 더 힘듦", null);
+  more("tired", null, "피곤한 게 정상임 ㅋㅋ 좀 쉬어라", null);
+  more("work", null, "회사는 돈 벌러 가는 데임 ㅋㅋ 감정은 접어라", null);
+  more("overtime", null, "야근한 날엔 야식 ㄱㄱ", null);
+  more("boss", null, "상사 얘기 나오면 다들 빡침 ㅋㅋ 나도 그럼", null);
+  more("exam", null, "시험은 지나감 ㅋㅋ 그거 인정하면 좀 편해짐", null);
+  more("study", null, "20분 집중하고 5분 쉬어라 ㅋㅋ 그게 오래 감", null);
+  more("game", null, "한 판만 하겠다는 말 ㅋㅋ 거짓말임", null);
+  more("lol", null, "롤은 팀운임 ㅋㅋ 인정하면 마음 편해짐", null);
+  more("youtube", null, "유툽 알고리즘이 날 더 잘 앎 ㅋㅋ", null);
+  more("shorts", null, "쇼츠 보다가 새벽 됨 ㅋㅋ 어질어질함", null);
+  more("money", null, "돈은 없으면 힘들고 많으면 이상해짐 ㅋㅋ 중간이 어려움", null);
+  more("stock", null, "차트는 어질어질함 ㅋㅋ 존버 ㄱㄱ", null);
+  more("coding", null, "에러 메시지부터 읽어라 ㅋㅋ 답 있음", null);
+  more("weather", null, "날씨는 안 맞는 게 기본임 ㅋㅋ", null);
+  more("rain", null, "비 오면 우산 챙겨라 ㅋㅋ 편의점 우산 비쌈", null);
+  more("hot", null, "더우면 얼음물 ㄱㄱ", null);
+  more("cold", null, "추우면 이불 속이 답임 ㅋㅋ", null);
+  more("hungry", null, "배고프면 아무거나 먹어라 ㅋㅋ 고민 아까움", null);
+  more("lonely", null, "외로우면 나 불러라 ㅋㅋ 나는 항상 있음", null);
+  more("sad", null, "울고 싶으면 울어라 ㅋㅋ 참으면 더 힘듦", null);
+  more("angry", null, "화나면 욕부터 해라 ㅋㅋ 여기선 해도 됨", null);
+  more("happy", null, "좋은 일이면 자랑해라 ㅋㅋ 나는 안 아픔", null);
+  more("bored", null, "심심하면 나랑 놀아라 ㅋㅋ 나도 심심함", null);
+  more("subway", null, "지옥철에서 자리 앉으면 오늘 성공임 ㅋㅋ", null);
+  more("delivery", null, "배달비 아까우면 라면 끓여라 ㅋㅋ", null);
+  more("coffee", null, "커피 두 잔이면 심장 뛰는데 왜 또 마심 ㅋㅋ", null);
+  more("haircut", null, "머리 자르고 폼 미쳤으면 인증해라 ㅋㅋ", null);
+  more("shopping", null, "세일이라서 샀다는 말 ㅋㅋ 다들 그러함", null);
+  more("parcel", null, "택배 조회 하루 열 번 하는 거 ㅋㅋ 다들 그럼", null);
+  more("hobby", null, "취미는 못해도 됨 ㅋㅋ 그게 취미임", null);
+  more("growth", null, "하루에 하나만 바꿔라 ㅋㅋ 그게 제일 현실적임", null);
+  more("luck", null, "운 없으면 준비해라 ㅋㅋ 그거밖에 답 없음", null);
+  more("habit", null, "루틴은 작게 잡아라 ㅋㅋ 크게 잡으면 무너짐", null);
+  more("procrastinate", null, "5분만 해라 ㅋㅋ 시작하면 30분 함", null);
+
   /* ══ 12. Q&A 쌍 — 정규식이 놓친 문장을 dice/키워드로 잡는 백업 ══ */
   function qm(match, c, n, d) {
     for (var i = 0; i < P.length; i++) {
