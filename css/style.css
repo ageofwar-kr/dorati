@@ -131,10 +131,10 @@ body[data-mode="dorat"] .mascot{animation:wiggle 1.6s ease-in-out infinite}
   scroll-behavior:smooth;
 }
 .row{display:flex; gap:7px; align-items:flex-end; max-width:100%}
-.row.bot{justify-content:flex-start}
+.row.bot{justify-content:flex-start; align-items:flex-start}
 .row.user{justify-content:flex-end}
 .avatar{
-  width:26px; height:26px; flex:0 0 26px; margin-bottom:2px;
+  width:26px; height:26px; flex:0 0 26px; margin-top:3px;
 }
 .avatar svg{width:100%; height:100%; display:block}
 .bubble{

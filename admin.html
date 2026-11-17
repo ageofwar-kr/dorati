@@ -434,7 +434,14 @@
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ action: "teach", target: target, instruction: instruction }),
       redirect: "follow",
-      cache: "no-store"
+      cache: "no-store",
+      signal: (function () {
+        try {
+          var c = new AbortController();
+          setTimeout(function () { c.abort(); }, 100000);
+          return c.signal;
+        } catch (e) { return undefined; }
+      })()
     })
       .then(function (r) {
         if (!r.ok) throw new Error("HTTP " + r.status);
@@ -479,7 +486,9 @@
         });
       })
       .catch(function (e) {
-        teachStatus.textContent = "실패: " + (e && e.message ? e.message : e);
+        teachStatus.textContent = (e && e.name === "AbortError")
+          ? "시간 초과 — 제미나이가 응답하지 않았어요. 다시 눌러주세요."
+          : "실패: " + (e && e.message ? e.message : e);
       })
       .then(function () {
         teachBusy = false;
