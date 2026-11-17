@@ -88,8 +88,40 @@
     mascotEl.innerHTML = mascotSVG(state.mode);
     var gm = document.getElementById("gate-mascot");
     if (gm) gm.innerHTML = mascotSVG(state.mode);
+    updateThemeColor();
+  }
+
+  /* ── 화이트 / 다크 테마 ───────────────────────────────── */
+  var THEME_KEY = "dorati.theme";
+
+  function updateThemeColor() {
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", { clean: "#3e9e7a", normal: "#ff8a3d", dorat: "#7b3fe4", smart: "#3a6df0" }[state.mode] || "#ff8a3d");
+    if (!meta) return;
+    var dark = document.body.dataset.theme === "dark";
+    var map = {
+      clean: ["#3e9e7a", "#12181a"],
+      normal: ["#ff8a3d", "#191512"],
+      dorat: ["#7b3fe4", "#1a1425"],
+      smart: ["#3a6df0", "#141a29"]
+    };
+    var pair = map[state.mode] || map.normal;
+    meta.setAttribute("content", dark ? pair[1] : pair[0]);
+  }
+
+  function applyTheme(name) {
+    var t = name === "dark" ? "dark" : "light";
+    document.body.dataset.theme = t;
+    var b = document.getElementById("theme-btn");
+    if (b) {
+      b.textContent = t === "dark" ? "다크" : "화이트";
+      b.setAttribute("aria-pressed", String(t === "dark"));
+    }
+    lsSet(THEME_KEY, t);
+    updateThemeColor();
+  }
+
+  function toggleTheme() {
+    applyTheme(document.body.dataset.theme === "dark" ? "light" : "dark");
   }
 
   /* 똑똑이 모드일 때만 모드 버튼 위에 실제 제미나이 모델명을 아주 작게 띄운다 */
@@ -475,6 +507,12 @@
     openGate();
   });
 
+  document.getElementById("theme-btn").addEventListener("click", toggleTheme);
+  document.getElementById("menu-theme").addEventListener("click", function () {
+    toggleMenu(false);
+    toggleTheme();
+  });
+
   document.getElementById("menu-export").addEventListener("click", function () {
     toggleMenu(false);
     var lines = state.history.map(function (m) {
@@ -520,6 +558,7 @@
 
   /* ── 시작 ─────────────────────────────────────────────── */
   function boot() {
+    applyTheme(lsGet(THEME_KEY) || "light");
     var savedMode = lsGet("dorati.mode");
     setMode(savedMode || "normal", true);
     var savedNick = lsGet(NICK_KEY) || "";
