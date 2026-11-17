@@ -158,15 +158,19 @@ function pack(word, pos, senses, source, link) {
     });
   }
 
-  function lookup(word) {
+  /* opts.relay === false 이면 중계 대기(최대 9초)를 건너뛴다.
+     채팅 중 느슨한 단어 질문에 쓴다 — 대기 없이 내장/공용 캐시만 확인. */
+  function lookup(word, opts) {
     word = String(word || "").trim();
     if (!word) return Promise.resolve(null);
+    var allowRelay = !(opts && opts.relay === false);
     var cached = localCacheGet("w:" + word);
     if (cached) return Promise.resolve(cached);
     return findBundled(word, "words").then(function (b) {
       if (b) { localCachePut("w:" + word, b); return b; }
       return fromShared(word).then(function (s) {
         if (s) { localCachePut("w:" + word, s); return s; }
+        if (!allowRelay) return null;
         return askProxy(word).then(function (p) {
           if (p) { localCachePut("w:" + word, p); return p; }
           return askRelay(word).then(function (r) {

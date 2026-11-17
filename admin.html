@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<title>도랏이 관리자 — 학습 단어 관리</title>
+<title>도랏이 관리자 — 사람 학습 · 기본 내장</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#1f1b16">
@@ -21,15 +21,26 @@
   header{
     display:flex; align-items:center; justify-content:space-between; gap:12px;
     padding:14px 18px; background:var(--panel); border-bottom:1px solid var(--line);
-    position:sticky; top:0; z-index:10;
+    position:sticky; top:0; z-index:10; flex-wrap:wrap;
   }
   header h1{margin:0; font-size:16px; letter-spacing:-.02em; display:flex; align-items:center; gap:8px}
   header .sub{font-size:11.5px; color:var(--dim); font-weight:500}
   .wrap{max-width:1080px; margin:0 auto; padding:16px 14px 60px}
+
+  /* 탭 */
+  .tabs{display:flex; gap:6px; padding:12px 14px 0; max-width:1080px; margin:0 auto}
+  .tabs button{
+    border:1px solid var(--line); border-bottom:0; background:#efeae1; color:#5b544c;
+    border-radius:12px 12px 0 0; padding:11px 18px; font:inherit; font-weight:800; cursor:pointer;
+  }
+  .tabs button[aria-selected="true"]{background:var(--panel); color:var(--text); box-shadow:0 -2px 0 var(--accent) inset}
+  .tabs .count{font-weight:700; color:var(--dim); font-size:11.5px; margin-left:6px}
+
   .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:14px}
   .stat{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px}
   .stat b{display:block; font-size:22px; font-variant-numeric:tabular-nums; letter-spacing:-.02em}
   .stat span{font-size:11.5px; color:var(--dim)}
+  .stat.ok b{color:var(--ok)}
   .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px}
   .toolbar input[type=search]{
     flex:1 1 220px; min-width:0; border:1px solid var(--line); background:var(--panel);
@@ -55,6 +66,7 @@
   .tag.clean{background:#dff0e8; color:#1f6b51}
   .tag.normal{background:#ffe8d8; color:#b2560f}
   .tag.dorat{background:#e8ddfb; color:#4b1f9c}
+  .tag.kind{background:#eae4da; color:#5b544c}
   .acts{display:flex; gap:6px; align-items:flex-start}
   .acts button{
     border:1px solid var(--line); background:#fff; border-radius:9px; padding:6px 10px;
@@ -63,6 +75,33 @@
   .acts .del{color:var(--danger); border-color:#f3d3cc}
   .acts .del:hover{background:#fdecea}
   .empty{padding:40px 0; text-align:center; color:var(--dim)}
+
+  /* 기본 내장 탭 */
+  .bcard{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px}
+  .bhead{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px}
+  .bhead .id{font-weight:800; letter-spacing:-.01em}
+  .bhead code{
+    font-size:11px; color:#6a635b; background:#f2ede5; border-radius:7px; padding:2px 7px;
+    word-break:break-all; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  .replies{display:grid; gap:8px; grid-template-columns:repeat(3,1fr); margin-top:8px}
+  .rgroup{border:1px solid var(--line); border-radius:11px; padding:8px 10px; background:#fdfbf7}
+  .rgroup h4{margin:0 0 5px; font-size:10.5px; letter-spacing:.02em; color:var(--dim); font-weight:800}
+  .rgroup ul{margin:0; padding-left:15px}
+  .rgroup li{font-size:12.5px; color:#3b352f; margin:2px 0; word-break:break-word}
+  .rgroup.clean{border-color:#cfe8dc}
+  .rgroup.normal{border-color:#f6ddc6}
+  .rgroup.dorat{border-color:#ded1f7}
+  .more{display:block; width:100%; margin-top:12px; padding:12px; border:1px dashed var(--line);
+    background:#fbf8f2; border-radius:12px; font:inherit; font-weight:800; cursor:pointer; color:#6a635b}
+  @media (max-width:760px){
+    .replies{grid-template-columns:1fr}
+  }
+  @media (max-width:560px){
+    .item{grid-template-columns:1fr}
+    .acts{justify-content:flex-end}
+    .tabs button{padding:10px 13px; font-size:13px}
+  }
 
   /* 로그인 */
   .gate{position:fixed; inset:0; display:grid; place-items:center; background:#1f1b16; z-index:50; padding:20px}
@@ -83,10 +122,6 @@
     background:var(--accent); color:#fff; font:inherit; font-weight:800; font-size:15px; cursor:pointer;
   }
   .gate .err{color:var(--danger); font-size:12px; min-height:16px; margin-top:8px}
-  @media (max-width:560px){
-    .item{grid-template-columns:1fr}
-    .acts{justify-content:flex-end}
-  }
 </style>
 </head>
 <body>
@@ -94,7 +129,7 @@
 <div id="gate" class="gate" hidden>
   <form id="gate-form" autocomplete="off">
     <h2>🔒 관리자</h2>
-    <p>학습 데이터를 직접 고치는 화면이에요.<br>패스코드를 입력해 주세요.</p>
+    <p>학습 데이터와 내장 대화를 직접 보는 화면이에요.<br>패스코드를 입력해 주세요.</p>
     <input id="pin" type="password" inputmode="numeric" placeholder="패스코드" autocomplete="off" aria-label="패스코드">
     <button type="submit">들어가기</button>
     <div class="err" id="err"></div>
@@ -102,13 +137,19 @@
 </div>
 
 <header>
-  <h1>도랏이 관리자 <span class="sub">학습 단어 확인 · 관리</span></h1>
+  <h1>도랏이 관리자 <span class="sub">사람이 가르친 말 · 기본 내장 대화</span></h1>
   <div>
     <button id="logout" style="border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 12px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">잠그기</button>
   </div>
 </header>
 
-<div class="wrap">
+<div class="tabs" role="tablist" aria-label="관리자 탭">
+  <button id="tab-btn-human" role="tab" aria-selected="true" data-tab="human">사람 학습<span class="count" id="c-human">0</span></button>
+  <button id="tab-btn-builtin" role="tab" aria-selected="false" data-tab="builtin">기본 내장<span class="count" id="c-builtin">-</span></button>
+</div>
+
+<!-- ══ 탭 1: 사람 학습 ══ -->
+<section id="tab-human" class="wrap">
   <div class="stats">
     <div class="stat"><b id="s-total">0</b><span>전체 학습</span></div>
     <div class="stat"><b id="s-clean">0</b><span>건전</span></div>
@@ -134,7 +175,34 @@
   </div>
 
   <div id="list" class="list"><div class="empty">불러오는 중…</div></div>
-</div>
+</section>
+
+<!-- ══ 탭 2: 기본 내장 (읽기 전용) ══ -->
+<section id="tab-builtin" class="wrap" hidden>
+  <div class="stats">
+    <div class="stat"><b id="b-intents">-</b><span>내장 의도</span></div>
+    <div class="stat"><b id="b-pairs">-</b><span>Q&A 쌍</span></div>
+    <div class="stat"><b id="b-replies">-</b><span>모드별 답변 총계</span></div>
+    <div class="stat ok"><b id="b-min">-</b><span>모드별 최소 답변</span></div>
+  </div>
+
+  <div class="toolbar">
+    <input id="b-search" type="search" placeholder="id · 트리거 · 답변으로 검색…">
+    <select id="b-kind">
+      <option value="">전체</option>
+      <option value="intent">의도</option>
+      <option value="pair">Q&amp;A 쌍</option>
+    </select>
+    <select id="b-mode">
+      <option value="">모든 모드</option>
+      <option value="clean">건전</option>
+      <option value="normal">일반</option>
+      <option value="dorat">도랏</option>
+    </select>
+  </div>
+
+  <div id="b-list" class="list"><div class="empty">불러오는 중…</div></div>
+</section>
 
 <script>
 (function () {
@@ -159,8 +227,16 @@
     });
   }
 
-  function unlock() { gate.hidden = true; sessionStorage.setItem(SESSION_KEY, "1"); load(); }
-  function lock() { sessionStorage.removeItem(SESSION_KEY); gate.hidden = false; pinInput.value = ""; }
+  function unlock() {
+    gate.hidden = true;
+    sessionStorage.setItem(SESSION_KEY, "1");
+    load();
+  }
+  function lock() {
+    sessionStorage.removeItem(SESSION_KEY);
+    gate.hidden = false;
+    pinInput.value = "";
+  }
 
   if (sessionStorage.getItem(SESSION_KEY) === "1") { unlock(); } else { gate.hidden = false; }
 
@@ -176,7 +252,40 @@
 
   document.getElementById("logout").addEventListener("click", lock);
 
-  /* ── 데이터 ─────────────────────────────────────────── */
+  /* ── 탭 전환 ────────────────────────────────────────── */
+  var tabs = { human: document.getElementById("tab-human"), builtin: document.getElementById("tab-builtin") };
+  var tabBtns = { human: document.getElementById("tab-btn-human"), builtin: document.getElementById("tab-btn-builtin") };
+  var currentTab = "human";
+
+  function showTab(name) {
+    if (!tabs[name]) return;
+    currentTab = name;
+    for (var k in tabs) {
+      tabs[k].hidden = k !== name;
+      tabBtns[k].setAttribute("aria-selected", String(k === name));
+    }
+    if (name === "builtin") {
+      loadBuiltin().then(renderBuiltin);
+    }
+  }
+
+  document.querySelectorAll("[data-tab]").forEach(function (b) {
+    b.addEventListener("click", function () { showTab(b.dataset.tab); });
+  });
+
+  /* ══ 탭 1: 사람 학습 ══════════════════════════════════ */
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function when(ts) {
+    if (!ts) return "-";
+    var d = new Date(ts);
+    return d.toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  }
+
   function load() {
     fetch(DB + "/pairs.json", { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -190,14 +299,14 @@
             up: Number((v.v && v.v.up) || 0), down: Number((v.v && v.v.down) || 0), r: Number(v.r || 0)
           });
         }
-        render();
+        renderHuman();
       })
       .catch(function () {
         document.getElementById("list").innerHTML = '<div class="empty">불러오기 실패 — 잠시 뒤 새로고침해 주세요.</div>';
       });
   }
 
-  function counts() {
+  function humanCounts() {
     var c = { total: pairs.length, clean: 0, normal: 0, dorat: 0, votes: 0 };
     pairs.forEach(function (p) {
       c[p.m] = (c[p.m] || 0) + 1;
@@ -208,22 +317,12 @@
     document.getElementById("s-normal").textContent = c.normal;
     document.getElementById("s-dorat").textContent = c.dorat;
     document.getElementById("s-votes").textContent = c.votes;
+    document.getElementById("c-human").textContent = c.total;
+    return c;
   }
 
-  function esc(s) {
-    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-    });
-  }
-
-  function when(ts) {
-    if (!ts) return "-";
-    var d = new Date(ts);
-    return d.toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
-  }
-
-  function render() {
-    counts();
+  function renderHuman() {
+    humanCounts();
     var q = document.getElementById("search").value.trim().toLowerCase();
     var mf = document.getElementById("mode-filter").value;
     var sort = document.getElementById("sort").value;
@@ -240,7 +339,7 @@
 
     var list = document.getElementById("list");
     if (!rows.length) {
-      list.innerHTML = '<div class="empty">아직 학습된 말이 없어요.</div>';
+      list.innerHTML = '<div class="empty">' + (pairs.length ? "조건에 맞는 말이 없어요." : "아직 학습된 말이 없어요. 도랏이와 대화하면 여기에 쌓여요.") + "</div>";
       return;
     }
     list.innerHTML = rows.map(function (p) {
@@ -255,9 +354,9 @@
     }).join("");
   }
 
-  document.getElementById("search").addEventListener("input", render);
-  document.getElementById("mode-filter").addEventListener("change", render);
-  document.getElementById("sort").addEventListener("change", render);
+  document.getElementById("search").addEventListener("input", renderHuman);
+  document.getElementById("mode-filter").addEventListener("change", renderHuman);
+  document.getElementById("sort").addEventListener("change", renderHuman);
   document.getElementById("reload").addEventListener("click", load);
 
   document.getElementById("list").addEventListener("click", function (ev) {
@@ -273,7 +372,7 @@
       fetch(DB + "/pairs/" + encodeURIComponent(id) + ".json", { method: "DELETE" })
         .then(function () {
           pairs = pairs.filter(function (p) { return p.id !== id; });
-          render();
+          renderHuman();
         });
     }
     if (btn.classList.contains("edit")) {
@@ -285,9 +384,121 @@
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ a: next })
-      }).then(function () { item.a = next; render(); });
+      }).then(function () { item.a = next; renderHuman(); });
     }
   });
+
+  /* ══ 탭 2: 기본 내장 (읽기 전용) ══════════════════════ */
+  var builtin = { loaded: false, loading: null, items: [], shown: 60 };
+
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = function () { reject(new Error("script load failed: " + src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function loadBuiltin() {
+    if (builtin.loaded) return Promise.resolve();
+    if (builtin.loading) return builtin.loading;
+    document.getElementById("b-list").innerHTML = '<div class="empty">내장 대화를 불러오는 중…</div>';
+    builtin.loading = loadScript("./js/kb-dialogues.js?v=2.5")
+      .then(function () { return loadScript("./js/kb-corpus.js?v=2.5"); })
+      .then(function () {
+        var C = window.DORATI_CORPUS || { intents: [], pairs: [] };
+        builtin.items = [];
+        (C.intents || []).forEach(function (it) {
+          builtin.items.push({
+            kind: "intent", id: it.id, re: it.re || "",
+            clean: [].concat(it.clean || []), normal: [].concat(it.normal || []), dorat: [].concat(it.dorat || [])
+          });
+        });
+        (C.pairs || []).forEach(function (p) {
+          builtin.items.push({
+            kind: "pair", id: p.q, re: "",
+            clean: [].concat(p.clean || []), normal: [].concat(p.normal || []), dorat: [].concat(p.dorat || [])
+          });
+        });
+        builtin.loaded = true;
+        builtin.loading = null;
+        return true;
+      })
+      .catch(function () {
+        builtin.loading = null;
+        document.getElementById("b-list").innerHTML = '<div class="empty">내장 대화 파일을 불러오지 못했어요. 새로고침해 주세요.</div>';
+      });
+    return builtin.loading;
+  }
+
+  function builtinCounts() {
+    var intents = 0, pairCount = 0, replies = 0, min = 99;
+    builtin.items.forEach(function (it) {
+      if (it.kind === "intent") intents++; else pairCount++;
+      replies += it.clean.length + it.normal.length + it.dorat.length;
+      min = Math.min(min, it.clean.length, it.normal.length, it.dorat.length);
+    });
+    document.getElementById("b-intents").textContent = intents;
+    document.getElementById("b-pairs").textContent = pairCount;
+    document.getElementById("b-replies").textContent = replies;
+    document.getElementById("b-min").textContent = (min === 99 ? "-" : min + "개");
+    document.getElementById("c-builtin").textContent = replies;
+  }
+
+  function matches(it, q, mode) {
+    if (!q) return true;
+    var hay = it.id + " " + it.re + " " + it.clean.join(" ") + " " + it.normal.join(" ") + " " + it.dorat.join(" ");
+    if (mode) hay += " " + (mode === "clean" ? "건전" : mode === "dorat" ? "도랏" : "일반");
+    return hay.toLowerCase().indexOf(q) >= 0;
+  }
+
+  function group(title, cls, list) {
+    if (!list.length) return "";
+    return '<div class="rgroup ' + cls + '"><h4>' + title + "</h4><ul>" +
+      list.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul></div>";
+  }
+
+  function renderBuiltin() {
+    if (!builtin.loaded) return;
+    builtinCounts();
+    var q = document.getElementById("b-search").value.trim().toLowerCase();
+    var kind = document.getElementById("b-kind").value;
+    var mode = document.getElementById("b-mode").value;
+    var rows = builtin.items.filter(function (it) {
+      if (kind && it.kind !== kind) return false;
+      return matches(it, q, mode);
+    });
+    var list = document.getElementById("b-list");
+    if (!rows.length) {
+      list.innerHTML = '<div class="empty">조건에 맞는 내장 대화가 없어요.</div>';
+      return;
+    }
+    var slice = rows.slice(0, builtin.shown);
+    var html = slice.map(function (it) {
+      var head = '<div class="bhead"><span class="id">' + esc(it.id) + "</span>" +
+        '<span class="tag kind">' + (it.kind === "intent" ? "의도" : "Q&A") + "</span>";
+      if (it.kind === "intent" && it.re) head += "<code>" + esc(it.re) + "</code>";
+      head += "</div>";
+      var body = '<div class="replies">' +
+        (mode && mode !== "clean" ? "" : group("건전 · " + it.clean.length, "clean", it.clean)) +
+        (mode && mode !== "normal" ? "" : group("일반 · " + it.normal.length, "normal", it.normal)) +
+        (mode && mode !== "dorat" ? "" : group("도랏 · " + it.dorat.length, "dorat", it.dorat)) +
+        "</div>";
+      return '<div class="bcard">' + head + body + "</div>";
+    }).join("");
+    if (rows.length > slice.length) {
+      html += '<button class="more" id="b-more">더 보기 (' + slice.length + " / " + rows.length + ")</button>";
+    }
+    list.innerHTML = html;
+    var more = document.getElementById("b-more");
+    if (more) more.addEventListener("click", function () { builtin.shown += 60; renderBuiltin(); });
+  }
+
+  document.getElementById("b-search").addEventListener("input", function () { builtin.shown = 60; renderBuiltin(); });
+  document.getElementById("b-kind").addEventListener("change", function () { builtin.shown = 60; renderBuiltin(); });
+  document.getElementById("b-mode").addEventListener("change", function () { builtin.shown = 60; renderBuiltin(); });
 
   load();
 })();
