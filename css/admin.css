@@ -153,7 +153,14 @@ header .sub{font-size:11.5px; color:var(--dim); font-weight:500}
   transition:background .16s ease, color .16s ease;
 }
 .teach-modes button[aria-selected="true"]{background:var(--panel-2); color:var(--accent); box-shadow:0 1px 3px rgba(0,0,0,.14)}
-.teach-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px}
+.teach-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center}
+.teach-targets{display:inline-flex; gap:3px; padding:3px; background:var(--bg); border:1px solid var(--line); border-radius:999px; flex-wrap:wrap}
+.teach-targets button{
+  border:0; background:transparent; color:var(--dim); font:inherit; font-weight:700; font-size:11.5px;
+  padding:6px 11px; border-radius:999px; cursor:pointer; white-space:nowrap;
+  transition:background .16s ease, color .16s ease;
+}
+.teach-targets button[aria-pressed="true"]{background:var(--panel-2); color:var(--accent); box-shadow:0 1px 3px rgba(0,0,0,.14)}
 .teach-row select{
   border:1px solid var(--line); background:var(--panel-2); color:var(--text);
   border-radius:11px; padding:10px 12px; font:inherit; outline:none;
@@ -192,6 +199,24 @@ header .sub{font-size:11.5px; color:var(--dim); font-weight:500}
 .tp-q{font-weight:800; font-size:13px; letter-spacing:-.01em; word-break:break-word}
 .tp-a{font-size:12.5px; color:var(--dim); margin-top:2px; word-break:break-word}
 .tp-meta{margin-top:6px}
+
+/* 제미나이 학습 카드 (기본 내장 탭) */
+.gsec{display:flex; flex-direction:column; gap:7px; margin-bottom:14px}
+.gsec-head{font-size:11.5px; color:var(--dim); font-weight:800; letter-spacing:.02em}
+.gsec-head b{color:var(--text); font-variant-numeric:tabular-nums}
+.gcard{background:var(--panel-2); border:1px solid var(--line); border-radius:14px; padding:11px 13px}
+.ghead{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px}
+.gbadge{
+  font-size:10px; font-weight:800; letter-spacing:.02em; color:var(--accent);
+  border:1px solid color-mix(in srgb, var(--accent) 34%, var(--line)); border-radius:999px; padding:2px 8px;
+}
+.gtime{font-size:10.5px; color:var(--dim); font-family:var(--mono)}
+.gdel{
+  margin-left:auto; border:1px solid color-mix(in srgb, var(--danger) 30%, var(--line));
+  background:transparent; color:var(--danger); border-radius:8px; padding:4px 9px;
+  font:inherit; font-size:11.5px; font-weight:700; cursor:pointer;
+}
+.gdel:hover{background:color-mix(in srgb, var(--danger) 12%, var(--panel))}
 
 /* ── 로그인 게이트 ── */
 .gate{position:fixed; inset:0; display:grid; place-items:center; background:#0b0c0e; z-index:50; padding:20px}
@@ -261,6 +286,9 @@ body[data-theme="ganji"] .teach-modes{background:#121316; border-color:rgba(255,
 body[data-theme="ganji"] .teach-modes button[aria-selected="true"]{background:#232429; color:#f7c26b; box-shadow:none}
 body[data-theme="ganji"] .teach-row select, body[data-theme="ganji"] .teach-row input[type=text],
 body[data-theme="ganji"] #teach-instruction{background:#1c1d21; border-color:rgba(255,255,255,.09); color:#eeece7}
+body[data-theme="ganji"] .teach-targets{background:#121316; border-color:rgba(255,255,255,.08)}
+body[data-theme="ganji"] .teach-targets button[aria-pressed="true"]{background:#232429; color:#f7c26b; box-shadow:none}
+body[data-theme="ganji"] .gcard{background:#141519; border-color:rgba(255,255,255,.07)}
 body[data-theme="ganji"] .teach-row input::placeholder, body[data-theme="ganji"] #teach-instruction::placeholder{color:#76746d}
 body[data-theme="ganji"] .tp{background:#141519; border-color:rgba(255,255,255,.07)}
 body[data-theme="ganji"] .tp-a{color:#b7b4ac}

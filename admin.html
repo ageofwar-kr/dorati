@@ -43,7 +43,7 @@
       <h2>🤖 제미나이 자동 학습</h2>
       <span class="teach-model" id="teach-model">Gemini 3.8 Flash</span>
     </div>
-    <p class="hint">제미나이가 도랏이한테 쓸 만한 말 5쌍을 만들어 공용 DB에 바로 저장해요. 저장된 말은 건전·일반·도랏 모든 모드에 즉시 반영됩니다.</p>
+    <p class="hint">제미나이가 도랏이한테 쓸 만한 말 5쌍을 만들어 <b>기본 내장</b>에 저장해요. 저장된 말은 건전·일반·도랏 모든 모드에서 바로 쓰여요.</p>
 
     <div class="teach-modes" role="tablist" aria-label="학습 방식">
       <button type="button" role="tab" data-teach-mode="auto" aria-selected="true">자동 모드</button>
@@ -51,12 +51,12 @@
     </div>
 
     <div class="teach-row">
-      <select id="teach-target" aria-label="말투 모드">
-        <option value="auto">말투: 골고루</option>
-        <option value="clean">말투: 건전</option>
-        <option value="normal">말투: 일반</option>
-        <option value="dorat">말투: 도랏</option>
-      </select>
+      <div class="teach-targets" role="group" aria-label="학습 대상 모드">
+        <button type="button" data-target="auto" aria-pressed="true">자동학습 (전체)</button>
+        <button type="button" data-target="clean" aria-pressed="false">건전모드 학습</button>
+        <button type="button" data-target="normal" aria-pressed="false">일반모드 학습</button>
+        <button type="button" data-target="dorat" aria-pressed="false">도랏모드 학습</button>
+      </div>
       <input id="teach-topic" type="text" placeholder="주제 (선택) — 예: 요즘 밈, 일상 대화, 아재개그" aria-label="주제 (선택)">
     </div>
 
@@ -239,19 +239,28 @@
           if (!v || typeof v !== "object" || !v.q) continue;
           pairs.push({
             id: id, q: v.q, a: v.a || "", m: v.m || "normal", t: Number(v.t || 0),
+            src: v.src || "",
             up: Number((v.v && v.v.up) || 0), down: Number((v.v && v.v.down) || 0), r: Number(v.r || 0)
           });
         }
         renderHuman();
+        if (currentTab === "builtin" && builtin.loaded) renderBuiltin();
       })
       .catch(function () {
         document.getElementById("list").innerHTML = '<div class="empty">불러오기 실패 — 잠시 뒤 새로고침해 주세요.</div>';
       });
   }
 
+  /* 제미나이가 가르친 말 = 기본 내장에 모아 보여준다 */
+  function geminiPairs() {
+    return pairs.filter(function (p) { return p.src === "gemini"; });
+  }
+
   function humanCounts() {
-    var c = { total: pairs.length, clean: 0, normal: 0, dorat: 0, votes: 0 };
+    var c = { total: 0, clean: 0, normal: 0, dorat: 0, votes: 0 };
     pairs.forEach(function (p) {
+      if (p.src === "gemini") return;
+      c.total += 1;
       c[p.m] = (c[p.m] || 0) + 1;
       c.votes += p.up + p.down;
     });
@@ -270,6 +279,7 @@
     var mf = document.getElementById("mode-filter").value;
     var sort = document.getElementById("sort").value;
     var rows = pairs.filter(function (p) {
+      if (p.src === "gemini") return false;      /* 사람이 가르친 말만 */
       if (mf && p.m !== mf) return false;
       if (!q) return true;
       return (p.q + " " + p.a).toLowerCase().indexOf(q) >= 0;
@@ -282,7 +292,7 @@
 
     var list = document.getElementById("list");
     if (!rows.length) {
-      list.innerHTML = '<div class="empty">' + (pairs.length ? "조건에 맞는 말이 없어요." : "아직 학습된 말이 없어요. 도랏이와 대화하거나 위에서 제미나이 자동 학습을 눌러보세요.") + "</div>";
+      list.innerHTML = '<div class="empty">' + (pairs.length ? "조건에 맞는 말이 없어요." : "아직 사람이 가르친 말이 없어요. 도랏이와 대화하거나 기본 내장 탭에서 제미나이 학습을 눌러보세요.") + "</div>";
       return;
     }
     list.innerHTML = rows.map(function (p) {
@@ -334,6 +344,7 @@
   /* ══ 제미나이 자동 학습 ══════════════════════════════ */
   var PROXY = String((window.DORATI_CONFIG && window.DORATI_CONFIG.smartProxy) || "").trim();
   var teachMode = "auto";
+  var teachTarget = "auto";
   var teachBusy = false;
   var teachBtn = document.getElementById("teach-run");
   var teachStatus = document.getElementById("teach-status");
@@ -361,6 +372,16 @@
     b.addEventListener("click", function () { setTeachMode(b.dataset.teachMode); });
   });
   setTeachMode("auto");
+
+  /* 학습 대상 모드: 자동학습(전체) / 건전 / 일반 / 도랏 */
+  document.querySelectorAll("[data-target]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      teachTarget = b.dataset.target;
+      document.querySelectorAll("[data-target]").forEach(function (x) {
+        x.setAttribute("aria-pressed", String(x.dataset.target === teachTarget));
+      });
+    });
+  });
 
   function normalizeQ(s) {
     return String(s || "")
@@ -393,7 +414,7 @@
   function runTeach() {
     if (teachBusy) return;
     if (!PROXY) { teachStatus.textContent = "중계 주소가 설정되지 않았어요."; return; }
-    var target = document.getElementById("teach-target").value;
+    var target = teachTarget;
     var instruction = "";
     if (teachMode === "custom") {
       instruction = document.getElementById("teach-instruction").value.trim();
@@ -436,7 +457,7 @@
             if (!q || !a) return;
             if (!safePair(q, a)) { skipped.push(p); return; }
             var m = (p.mode === "clean" || p.mode === "dorat") ? p.mode : "normal";
-            var body = { q: q, qn: normalizeQ(q), a: a, m: m, t: Date.now() };
+            var body = { q: q, qn: normalizeQ(q), a: a, m: m, t: Date.now(), src: "gemini" };
             return fetch(DB + "/pairs.json", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -450,8 +471,11 @@
         });
         return chain.then(function () {
           renderTeachResult(added, skipped, j.model);
-          teachStatus.textContent = added.length + "개 저장 완료" + (skipped.length ? " · " + skipped.length + "개는 안전필터로 제외" : "");
-          if (added.length) load();
+          teachStatus.textContent = added.length + "개 저장 완료" + (skipped.length ? " · " + skipped.length + "개는 안전필터로 제외" : "") + " · 기본 내장 탭에 넣었어요";
+          if (added.length) {
+            load();
+            if (currentTab === "builtin") loadBuiltin().then(renderBuiltin);
+          }
         });
       })
       .catch(function (e) {
@@ -521,8 +545,39 @@
     document.getElementById("b-pairs").textContent = pairCount;
     document.getElementById("b-replies").textContent = replies;
     document.getElementById("b-min").textContent = (min === 99 ? "-" : min + "개");
-    document.getElementById("c-builtin").textContent = replies;
+    document.getElementById("c-builtin").textContent = replies + geminiPairs().length;
   }
+
+  /* 제미나이가 가르친 말 카드 (기본 내장 탭 상단) */
+  function geminiCardsHTML() {
+    var gs = pairs.filter(function (p) { return p.src === "gemini"; })
+      .sort(function (a, b) { return b.t - a.t; });
+    if (!gs.length) return "";
+    var rows = gs.map(function (p) {
+      return '<div class="gcard" data-gid="' + esc(p.id) + '">' +
+        '<div class="ghead"><span class="gbadge">🤖 Gemini 학습</span>' +
+        '<span class="tag ' + esc(p.m) + '">' + ({ clean: "건전", normal: "일반", dorat: "도랏" }[p.m] || p.m) + '</span>' +
+        '<span class="gtime">' + when(p.t) + '</span>' +
+        '<button type="button" class="gdel">삭제</button></div>' +
+        '<div class="tp-q">' + esc(p.q) + '</div>' +
+        '<div class="tp-a">→ ' + esc(p.a) + '</div></div>';
+    }).join("");
+    return '<div class="gsec"><div class="gsec-head">🤖 제미나이가 가르친 말 <b>' + gs.length + '</b>개</div>' + rows + '</div>';
+  }
+
+  document.getElementById("b-list").addEventListener("click", function (ev) {
+    var btn = ev.target.closest(".gdel");
+    if (!btn) return;
+    var card = btn.closest(".gcard");
+    var id = card && card.getAttribute("data-gid");
+    if (!id) return;
+    if (!confirm("제미나이가 가르친 이 말을 지울까요?")) return;
+    fetch(DB + "/pairs/" + encodeURIComponent(id) + ".json", { method: "DELETE" })
+      .then(function () {
+        pairs = pairs.filter(function (p) { return p.id !== id; });
+        renderBuiltin();
+      });
+  });
 
   function matches(it, q, mode) {
     if (!q) return true;
@@ -549,7 +604,7 @@
     });
     var list = document.getElementById("b-list");
     if (!rows.length) {
-      list.innerHTML = '<div class="empty">조건에 맞는 내장 대화가 없어요.</div>';
+      list.innerHTML = geminiCardsHTML() + '<div class="empty">조건에 맞는 내장 대화가 없어요.</div>';
       return;
     }
     var slice = rows.slice(0, builtin.shown);
@@ -568,7 +623,7 @@
     if (rows.length > slice.length) {
       html += '<button class="more" id="b-more">더 보기 (' + slice.length + " / " + rows.length + ")</button>";
     }
-    list.innerHTML = html;
+    list.innerHTML = geminiCardsHTML() + html;
     var more = document.getElementById("b-more");
     if (more) more.addEventListener("click", function () { builtin.shown += 60; renderBuiltin(); });
   }
