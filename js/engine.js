@@ -1,4 +1,5 @@
-/* 도랏이 대화 엔진 v1.9 — 정규화 / 인덱스 매칭 / 문장 패턴 / 사전질문 / 모드별 답변
+/* 도랏이 대화 엔진 v1.9.3 — 정규화 / 인덱스 매칭 / 문장 패턴 / 사전질문 / 모드별 답변
+   · v1.9.3: 시비·욕설·AI 비하·장문 공격을 먼저 감지해 kb-dorat-extra.js의 받아치기 풀로 답한다.
    · 내장 코퍼스(kb-corpus.js) 275개 의도 × 3모드 × 3답변 + 46개 Q&A쌍 × 3모드 × 3답변
    · 정확 일치 Map → 의도 정규식(문자 인덱스 프리필터) → 문장 패턴 → 사전 → dice 유사도 순
    · 같은 말을 반복해도 답이 겹치지 않도록 최근 답변 회피 */
@@ -139,6 +140,127 @@ window.Engine = (function () {
     return flat;
   }
 
+  /* ── 시비·욕설·비하 감지 (v1.9.3) ─────────────────────────
+     kb-dorat-extra.js가 넘긴 atk:true 항목을 우선 매칭 순서로 컴파일한다.
+     · 단일 욕설(시발·병신·꺼져…)은 한 단어만으로도 받아친다.
+     · 욕설+2인칭 / 직접 비하어 / 장문 공격이면 카테고리 풀에서 답한다.
+     · 아무 데도 안 걸리면 atk_final(최후 반격)로 한 방 날린다. */
+  var ATK = [];
+  (function () {
+    var list = CORPUS.intents || [];
+    for (var i = 0; i < list.length; i++) {
+      var raw = list[i];
+      if (!raw || !raw.atk) continue;
+      var re;
+      try { re = new RegExp(raw.re); } catch (e) { continue; }
+      ATK.push({
+        id: raw.id, re: re,
+        clean: raw.clean || [], normal: raw.normal || [], dorat: raw.dorat || []
+      });
+    }
+  })();
+
+  function atkBag(id) {
+    for (var i = 0; i < ATK.length; i++) if (ATK[i].id === id) return ATK[i];
+    return null;
+  }
+
+  /* 직접 비하·욕설 (가중치 3) */
+  var ATK_STRONG = /(병신|븅신|ㅄ|ㅂㅅ|개새끼|개자식|새끼|등신|머저리|한심|찐따|관종|못생|못났|와꾸|면상|멍청|무용지물|쓸모없|고장난|고장났|봇주제|ai주제|데이터쪼가리|코드쪼가리|반박해|반박할|반박좀|어쩔|긁혔|할말없|닥쳐|닥치|꺼져|꺼지|아가리|주둥이|지랄|개소리|헛소리|뻘짓|저능|똘추|또라이|빡대가리|대가리|무식|역겹|극혐|재수없|부들|발악|약올|비웃|쪽팔|발광|증명해|증명하|근거대|덤벼|해보시지|말로만|입만살|정신차려|정신좀|미쳤냐|미쳤어|약먹었|약빨았|발작|환각|어그로|오지랖|뇌없|뇌가없|맞는말|거울)/;
+  /* 상황 욕설 (가중치 2) — 2인칭이 같이 있어야 공격으로 본다 */
+  var ATK_SOFT = /(시발|씨발|씨팔|ㅅㅂ|썅|염병|엿|좆|씹|ㅈㄹ|존나|ㅈㄴ|미친|바보|쓰레기|빡치|빡침|토나와|이상하|못나|못됐|별로)/;
+  /* 2인칭 호칭 (가중치 1) — 띄어쓰기 기준으로 봐야 '너무·아니'를 안 잡는다 */
+  var ATK_ADDR = /(^|[\s"'“(])(니|너|넌|네가|니가|너네|니네|당신|야|야이)([\s,.!?~ㅋ"'”)]|$)/;
+  /* 한 단어만 던진 욕설 */
+  var ATK_SOLO = /^(시발|씨발|씨팔|ㅅㅂ|ㅆㅂ|썅|염병|엿|좆|좆같|좆까|씹|ㅈㄹ|지랄|병신|븅신|ㅂㅅ|ㅄ|개새끼|개자식|개소리|헛소리|닥쳐|닥치|꺼져|꺼지|아가리|주둥이|등신|머저리|한심|찐따|미친놈|미친년|미친새끼|또라이|빡대가리|호구|재수없|역겹|극혐)(아|야)?(ㅋㅋ|ㅎㅎ|!|\?|~)*$/;
+
+  function attackScore(raw, t) {
+    var score = 0;
+    if (ATK_STRONG.test(t)) score += 3;
+    if (ATK_SOFT.test(t)) score += 2;
+    if (ATK_ADDR.test(String(raw || ""))) score += 1;
+    return score;
+  }
+
+  /* 도랏 계열에서 섞어 쓰는 말투 — 약올리기·깐족 + 사투리 4종.
+     같은 욕만 반복되지 않게 확률로 말투를 바꿔 끼운다(카테고리 판정은 그대로). */
+  var ATK_FLAVOR = [
+    ["atk_taunt", 0.26], ["atk_chung", 0.10], ["atk_gyeong", 0.10],
+    ["atk_jeolla", 0.10], ["atk_seoul", 0.10]
+  ];
+  var ATK_FLAVOR_KEYS = { atk_taunt: 1, atk_chung: 1, atk_gyeong: 1, atk_jeolla: 1, atk_seoul: 1, atk_solo: 1 };
+
+  function attackReply(entry, mode, key, fill) {
+    if (!entry) return null;
+    var id = entry.id;
+    if (doratMode(mode) && !ATK_FLAVOR_KEYS[key]) {
+      var r = Math.random(), acc = 0, swap = null;
+      for (var i = 0; i < ATK_FLAVOR.length; i++) {
+        acc += ATK_FLAVOR[i][1];
+        if (r < acc) { swap = ATK_FLAVOR[i][0]; break; }
+      }
+      if (swap) {
+        var bag = atkBag(swap);
+        if (bag && bag.dorat && bag.dorat.length) entry = bag;
+      }
+    }
+    var pool = withMode(entry, mode);
+    if (!pool.length) return null;
+    var line = pickFresh("atk:" + key + (entry.id !== id ? ":" + entry.id : ""), pool);
+    if (fill) line = line.replace(/\{W\}/g, fill);
+    return {
+      type: "text",
+      text: line,
+      intent: id,
+      kind: "attack",
+      how: "attack"
+    };
+  }
+
+  /* 장문 공격으로 볼 길이 — 공백 제외 40자 이상이면 '길게 쓴 것'으로 본다 */
+  var LONG_ATK_LEN = 40;
+
+  function detectAttack(raw, mode) {
+    var text = String(raw || "");
+    var t = normalize(text);
+    if (!t) return null;
+
+    /* 1) 단일 욕설 — 한 단어만 던져도 바로 받아친다 */
+    var soloHit = t.match(ATK_SOLO);
+    if (soloHit) {
+      var solo = attackReply(atkBag("atk_solo"), mode, "solo", soloHit[1]);
+      if (solo) return solo;
+    }
+
+    var score = attackScore(text, t);
+    if (score < 3) return null;
+    /* "관종이 뭐야" 같은 단어 질문은 공격이 아니다 — 2인칭이 없으면 사전·가르치기로 보낸다 */
+    if (/(뭐야|뭔데|무엇|뜻|의미|알려줘|가르쳐|설명해)/.test(t) && !ATK_ADDR.test(text)) return null;
+
+    /* 2) 장문 공격 — 길고 욕·비하가 섞였으면 장문 전용 풀 */
+    if (text.replace(/\s/g, "").length >= LONG_ATK_LEN) {
+      var long = attackReply(atkBag("atk_long"), mode, "long");
+      if (long) return long;
+    }
+
+    /* 3) 카테고리 — 외모 → AI → 반박 → 욕설 → 닥쳐 → 멍청 → 미친 → 찐따 */
+    for (var i = 0; i < ATK.length; i++) {
+      var e = ATK[i];
+      if (e.id === "atk_long" || e.id === "atk_solo" || e.id === "atk_final") continue;
+      if (e.re.test(t)) {
+        var r = attackReply(e, mode, e.id);
+        if (r) return r;
+      }
+    }
+
+    /* 4) 최후 반격 */
+    return attackReply(atkBag("atk_final"), mode, "final");
+  }
+
+  function doratMode(mode) {
+    return mode === "dorat" || mode === "dorat_pure" || mode === "dorat_crazy";
+  }
+
   /* ── 학습 데이터 매칭 ─────────────────────────────────── */
   var PURE_DEFLECT_SET = Object.create(null);
   (function () {
@@ -199,6 +321,7 @@ window.Engine = (function () {
     var list = CORPUS.intents || [];
     for (var i = 0; i < list.length; i++) {
       var raw = list[i];
+      if (raw && raw.atk) continue;      /* 시비·욕설 팩은 detectAttack 전용 */
       var re;
       try { re = new RegExp(raw.re); } catch (e) { continue; }
       INTENTS.push({
@@ -574,6 +697,10 @@ window.Engine = (function () {
       };
     }
 
+    /* 3-b) 시비·욕설·비하·장문 공격 (v1.9.3) — 학습/되묻기로 새지 않게 먼저 받아친다 */
+    var atk = detectAttack(text, mode);
+    if (atk) return atk;
+
     /* 4) 학습된 말 (사용자가 직접 가르친 것) */
     var learned = pickLearned(text, snap, mode);
     if (learned) {
@@ -659,8 +786,12 @@ window.Engine = (function () {
     var pf = pairFuzzy(t);
     if (pf) return { type: "text", text: pairReply(pf, mode), intent: "pair:" + pf.q, how: "fuzzy" };
 
-    /* 15) 모르는 말 */
+    /* 15) 모르는 말 — 도랏 모드에서 욕·시비가 섞였으면 되묻지 말고 최후 반격 */
     if (teachable(text)) {
+      if (doratMode(mode) && attackScore(text, t) >= 3) {
+        var last = attackReply(atkBag("atk_final"), mode, "final");
+        if (last) return last;
+      }
       var asks = withMode(KB.askBack, mode);
       return {
         type: "text",
@@ -737,7 +868,7 @@ window.Engine = (function () {
   }
 
   return {
-    version: "1.9",
+    version: "1.9.3",
     isAdultLine: isAdultLine,
     normalize: normalize,
     dice: dice,
@@ -745,6 +876,8 @@ window.Engine = (function () {
     looseWord: looseWord,
     answer: answer,
     answerSync: answerSync,
+    detectAttack: detectAttack,
+    attackScore: attackScore,
     pickLearned: pickLearned,
     visible: visible,
     stats: stats,

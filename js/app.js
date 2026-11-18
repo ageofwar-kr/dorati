@@ -594,7 +594,10 @@
     var html = escapeHtml(personalize(res.text))
       .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
     addBot(html, { entry: res.entry });
-    state.lastBot = { text: res.text, learnable: res.kind !== "safety" && res.kind !== "pureBlock" && res.kind !== "eggHint" };
+    state.lastBot = {
+      text: res.text,
+      learnable: res.kind !== "safety" && res.kind !== "pureBlock" && res.kind !== "eggHint" && res.kind !== "attack"
+    };
     state.pendingAsk = res.askTeachFor || null;
   }
 
@@ -675,17 +678,68 @@
     greet();
   });
 
-  /* ── 카톡 ─────────────────────────────────────────────── */
+  /* ── 카톡 인앱 브라우저 → 크롬·기본 브라우저 자동 이동 (v1.9.3) ──────────
+     · 카카오톡 UA에서만 동작한다. PC·크롬·삼성인터넷에서는 절대 건드리지 않는다.
+     · kakaotalk://web/openExternal → (안드로이드) intent:// 순서로 한 번씩만 시도한다.
+     · sessionStorage에 시각을 남겨 새로고침·재진입 때 반복 점프(무한 루프)를 막는다.
+     · 자동 이동은 사용자 조작이 아니라 대개 차단되므로, 배너 버튼은 그대로 폴백으로 둔다.
+     · 주소에 ?stay=1을 붙이면 자동 이동을 끄고 카톡 안에서 그대로 쓴다. */
+  var KAKAO_KEY = "dorati.kakao.escape";
+  var KAKAO_COOL = 10 * 60 * 1000;   /* 같은 탭에서 10분에 한 번만 자동 시도 */
+
+  function kakaoUa() {
+    return navigator.userAgent.toLowerCase().indexOf("kakaotalk") >= 0;
+  }
+
+  function kakaoTargetUrl() {
+    /* 해시(#)는 떼고 보낸다 — 카톡 스킴에 붙이면 열리지 않는 경우가 있다 */
+    return location.href.split("#")[0];
+  }
+
+  function goExternal(kind) {
+    var url = kakaoTargetUrl();
+    var target = kind === "intent"
+      ? "intent://" + url.replace(/^https?:\/\//, "") +
+        "#Intent;scheme=https;S.browser_fallback_url=" + encodeURIComponent(url) + ";end"
+      : "kakaotalk://web/openExternal?url=" + encodeURIComponent(url);
+    try { location.href = target; return true; } catch (e) { return false; }
+  }
+
+  function autoEscapeKakao() {
+    if (/[?&]stay=1/.test(location.search)) return;          /* 수동 정지 스위치 */
+    try {
+      var last = Number(sessionStorage.getItem(KAKAO_KEY) || 0);
+      if (last && Date.now() - last < KAKAO_COOL) return;    /* 방금 시도했다 → 배너만 */
+      sessionStorage.setItem(KAKAO_KEY, String(Date.now()));
+    } catch (e) { /* 사생활 보호 모드 등: 기록을 못 남기면 자동 이동은 하지 않는다 */ return; }
+
+    setTimeout(function () {
+      if (document.hidden) return;
+      goExternal("scheme");
+      /* 1차가 막혔으면(화면이 그대로면) 안드로이드에서 intent://로 한 번 더 */
+      setTimeout(function () {
+        if (document.hidden) return;
+        if (!/android/.test(navigator.userAgent.toLowerCase())) return;
+        goExternal("intent");
+      }, 1200);
+    }, 450);
+  }
+
   function kakao() {
-    var ua = navigator.userAgent.toLowerCase();
-    if (ua.indexOf("kakaotalk") < 0) return;
+    if (!kakaoUa()) return;
     var box = document.getElementById("kakao-banner");
     var btn = document.getElementById("kakao-open");
-    box.hidden = false;
-    btn.addEventListener("click", function (e) {
-      e.preventDefault();
-      location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(location.href);
-    });
+    if (box) box.hidden = false;
+    if (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        goExternal("scheme");
+        setTimeout(function () {
+          if (!document.hidden && /android/.test(navigator.userAgent.toLowerCase())) goExternal("intent");
+        }, 1200);
+      });
+    }
+    autoEscapeKakao();
   }
 
   /* ── 시작 ─────────────────────────────────────────────── */
