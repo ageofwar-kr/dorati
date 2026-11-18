@@ -420,8 +420,13 @@ window.Engine = (function () {
      그 말을 그대로 인용해 되받아친다. 도랏 계열에서만 쓴다. */
   var ROASTS = [];
 
+  /* 수집한 시비를 그대로 인용하면 안 되는 표현 — 인용문이 출력이 되므로 여기서 막는다 */
+  var ROAST_BAN = /(자살|자해|목매|투신|번개탄|죽고|죽어|뒤져|뒤질|죽여|살인|칼로|흉기|목숨|강간|성폭|성착취|몰카|야스|섹스|자위|야동|성관계|알몸|마약|필로폰|도박|해킹|납치|감금|한남|김치녀|틀딱|급식충|장애인|장애|정신병자|애자|전라도|경상도|충청도|일베|노무현|문재인|이재명|윤석열|박근혜|초딩|중딩|고딩|미성년|어린이)/;
+
   function setRoasts(list) {
-    ROASTS = (list || []).filter(function (r) { return r && r.q; });
+    ROASTS = (list || []).filter(function (r) {
+      return r && r.q && !ROAST_BAN.test(r.q);
+    });
   }
 
   var ROAST_FRAMES = [
