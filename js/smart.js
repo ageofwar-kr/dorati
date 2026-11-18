@@ -64,9 +64,43 @@ window.Smart = (function () {
     if (el) el.textContent = pretty(lastModel);
   }
 
+  /* 문맥은 최근 4턴(8메시지)·200자까지만 보낸다 — 페이로드와 모델 처리 시간을 줄인다. */
+  function trimHistory(history) {
+    var src = history || [];
+    var out = [];
+    for (var i = 0; i < src.length; i++) {
+      var m = src[i] || {};
+      var t = String(m.t || "").slice(0, 200);
+      if (!t) continue;
+      out.push({ r: m.r === "b" ? "b" : "u", t: t });
+    }
+    return out.slice(-(Number(cfg.smartContextMsgs) || 8));
+  }
+
+  /* 사전 예열 — 콜드 스타트를 사용자가 입력하는 시간에 미리 끝낸다.
+     ping 은 모델을 호출하지 않고 Apps Script 인스턴스만 깨우므로 무료·빠르다. */
+  var warmAt = 0, warmPending = null;
+  function warm(force) {
+    if (!proxy) return Promise.resolve(false);
+    var ttl = Number(cfg.smartWarmTtl || 120000);
+    if (!force && Date.now() - warmAt < ttl) return Promise.resolve(false);
+    if (warmPending) return warmPending;
+    warmAt = Date.now();
+    warmPending = ping().then(function () {
+      warmPending = null;
+      warmAt = Date.now();
+      return true;
+    }).catch(function () {
+      warmPending = null;
+      warmAt = 0;
+      return false;
+    });
+    return warmPending;
+  }
+
   function ask(text, nick, history) {
     /* 모델을 명시해서 보낸다 — 서버가 느린 gemini-3.8-flash를 먼저 시도하며 15~20초를 버리지 않게. */
-    return post({ action: "chat", text: text, nick: nick || "", history: history || [], model: modelName() }, 25000)
+    return post({ action: "chat", text: text, nick: nick || "", history: trimHistory(history), model: modelName() }, 25000)
       .then(function (j) {
         if (!j || !j.ok || !j.reply) throw new Error((j && j.error) || "empty");
         setModel(j.model);
@@ -94,6 +128,7 @@ window.Smart = (function () {
     ask: ask,
     teach: teach,
     ping: ping,
+    warm: warm,
     pretty: pretty,
     model: modelName,
     setModel: setModel,

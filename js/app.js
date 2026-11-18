@@ -353,6 +353,8 @@
     updateModelLabel();
     renderFlavor();
     lsSet("dorati.mode", mode);
+    /* 똑똑이 모드로 들어오는 순간 중계 서버를 미리 데운다(입력하는 동안 콜드 스타트 종료) */
+    if (mode === "smart" && window.Smart && window.Smart.warm) window.Smart.warm();
     requestAnimationFrame(function () { placeGlider(); });
     if (!silent) {
       addSystem(window.DORATI_KB.modeNotice[mode]);
@@ -512,16 +514,17 @@
   }
 
   function smartHistory() {
-    /* 방금 넣은 사용자 말은 빼고, 직전 대화 최대 12개만 문맥으로 보낸다 */
+    /* 방금 넣은 사용자 말은 빼고, 직전 대화 최근 4턴(8메시지)·200자만 문맥으로 보낸다.
+       문맥이 길면 페이로드가 커지고 모델이 느려진다. */
     var out = [];
-    var src = state.history.slice(-13, -1);
+    var src = state.history.slice(-9, -1);
     for (var i = 0; i < src.length; i++) {
       var m = src[i];
       var t = m.r === "u" ? m.t : String(m.h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
       if (!t) continue;
-      out.push({ r: m.r === "u" ? "u" : "b", t: t.slice(0, 300) });
+      out.push({ r: m.r === "u" ? "u" : "b", t: t.slice(0, 200) });
     }
-    return out.slice(-12);
+    return out.slice(-8);
   }
 
   function sendSmart(text, prevBot, pending) {
@@ -712,6 +715,16 @@
     e.preventDefault();
     send(input.value);
   });
+
+  /* 똑똑이 모드에서 입력을 시작하면 중계 서버를 미리 데운다 — 실제 요청보다 먼저 깨워 두면
+     첫 답이 콜드 스타트(1~3초)를 기다리지 않는다. warm() 자체가 2분 스로틀이라 매 키 입력은 무료다. */
+  function warmSmart() {
+    if (state.mode !== "smart") return;
+    if (window.Smart && window.Smart.warm) window.Smart.warm();
+  }
+  input.addEventListener("focus", warmSmart);
+  input.addEventListener("keydown", warmSmart);
+  input.addEventListener("input", warmSmart);
 
   boot();
 })();
