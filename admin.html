@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#111214">
 <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./css/admin.css?v=4.2">
+<link rel="stylesheet" href="./css/admin.css?v=4.3">
 </head>
 <body data-theme="ganji">
 
@@ -126,8 +126,8 @@
   <div id="b-list" class="list"><div class="empty">불러오는 중…</div></div>
 </section>
 
-<script src="./js/config.js?v=4.2"></script>
-<script src="./js/safety.js?v=4.2"></script>
+<script src="./js/config.js?v=4.3"></script>
+<script src="./js/safety.js?v=4.3"></script>
 <script>
 (function () {
   "use strict";
@@ -343,6 +343,8 @@
 
   /* ══ 제미나이 자동 학습 ══════════════════════════════ */
   var PROXY = String((window.DORATI_CONFIG && window.DORATI_CONFIG.smartProxy) || "").trim();
+  /* 모델을 명시해야 서버가 느린 기본 모델을 먼저 시도하다 멈추지 않는다 */
+  var SMART_MODEL = String((window.DORATI_CONFIG && window.DORATI_CONFIG.smartDefaultModel) || "gemini-3.5-flash-lite");
   var teachMode = "auto";
   var teachTarget = "auto";
   var teachBusy = false;
@@ -351,7 +353,7 @@
   var teachResult = document.getElementById("teach-result");
 
   function prettyModel(name) {
-    var m = String(name || "gemini-3.8-flash").replace(/^gemini-/i, "").split("-");
+    var m = String(name || "gemini-3.5-flash-lite").replace(/^gemini-/i, "").split("-");
     var out = ["Gemini"];
     m.forEach(function (p) {
       if (!p) return;
@@ -440,7 +442,7 @@
     fetch(PROXY, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "teach", target: target, instruction: instruction }),
+      body: JSON.stringify({ action: "teach", target: target, instruction: instruction, model: SMART_MODEL }),
       redirect: "follow",
       cache: "no-store",
       signal: (function () {
@@ -524,8 +526,8 @@
     if (builtin.loaded) return Promise.resolve();
     if (builtin.loading) return builtin.loading;
     document.getElementById("b-list").innerHTML = '<div class="empty">내장 대화를 불러오는 중…</div>';
-    builtin.loading = loadScript("./js/kb-dialogues.js?v=4.2")
-      .then(function () { return loadScript("./js/kb-corpus.js?v=4.2"); })
+    builtin.loading = loadScript("./js/kb-dialogues.js?v=4.3")
+      .then(function () { return loadScript("./js/kb-corpus.js?v=4.3"); })
       .then(function () {
         var C = window.DORATI_CORPUS || { intents: [], pairs: [] };
         builtin.items = [];

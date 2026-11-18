@@ -39,7 +39,7 @@ kind: readme
 
 ### 똑똑이 모드 (v1.6)
 - 구글 **Apps Script 웹 앱**을 얇은 중계 서버로 두고 **Gemini API**(무료 등급)로 답한다.
-  - `gemini-3.8-flash` 우선, 429/불가 시 `gemini-3.5-flash-lite` 자동 폴백.
+  - `gemini-3.5-flash-lite`를 기본 모델로 명시해서 보낸다(v1.9.1~). 앱이 `model`을 지정하지 않으면 중계 서버가 `gemini-3.8-flash`를 먼저 시도하다가 429/503로 수십 초를 버리거나 멈췄다. 빠른 이 모델을 먼저 쓰므로 보통 2~3초에 답한다.
   - 최근 6턴 문맥 유지, 닉네임을 자연스럽게 한 번 부르되 `아/야/님`은 붙이지 않음.
   - 제미나이 쪽 안전필터는 `BLOCK_ONLY_HIGH`(밈·놀림이 과검열되지 않게), 거부되면 설정 없이 재시도.
 - **API 키는 Apps Script의 Script Properties(`GEMINI_API_KEY`)에만** 있고 저장소·웹소스에는 없다.

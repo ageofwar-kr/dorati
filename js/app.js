@@ -132,7 +132,7 @@
     var on = state.mode === "smart";
     el.hidden = !on;
     if (!on) return;
-    var name = (window.Smart && window.Smart.model()) || "gemini-3.8-flash";
+    var name = (window.Smart && window.Smart.model()) || "gemini-3.5-flash-lite";
     el.textContent = window.Smart && window.Smart.pretty ? window.Smart.pretty(name) : name;
   }
 

@@ -5,14 +5,14 @@ window.Smart = (function () {
   "use strict";
   var cfg = window.DORATI_CONFIG || {};
   var proxy = String(cfg.smartProxy || "").trim();
-  var fallbackModel = String(cfg.smartDefaultModel || "gemini-3.8-flash");
+  var fallbackModel = String(cfg.smartDefaultModel || "gemini-3.5-flash-lite");
   var lastModel = "";
 
   function enabled() { return !!proxy; }
 
   function modelName() { return lastModel || fallbackModel; }
 
-  /* 사람이 읽기 좋은 표기: gemini-3.8-flash -> Gemini 3.8 Flash */
+  /* 사람이 읽기 좋은 표기: gemini-3.5-flash-lite -> Gemini 3.5 Flash Lite */
   function pretty(name) {
     var m = String(name || "").replace(/^gemini-/i, "").split("-");
     var out = ["Gemini"];
@@ -65,7 +65,8 @@ window.Smart = (function () {
   }
 
   function ask(text, nick, history) {
-    return post({ action: "chat", text: text, nick: nick || "", history: history || [] }, 45000)
+    /* 모델을 명시해서 보낸다 — 서버가 느린 gemini-3.8-flash를 먼저 시도하며 15~20초를 버리지 않게. */
+    return post({ action: "chat", text: text, nick: nick || "", history: history || [], model: modelName() }, 25000)
       .then(function (j) {
         if (!j || !j.ok || !j.reply) throw new Error((j && j.error) || "empty");
         setModel(j.model);
