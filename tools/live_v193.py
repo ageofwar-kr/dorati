@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""v1.9.3 라이브 검증 — Playwright로 실제 페이지에서 도랏 받아치기·모드·이스터에그·카톡 탈출 확인."""
+"""v1.9.4 라이브 검증 — Playwright로 실제 페이지에서 도랏 받아치기·모드·이스터에그·카톡 탈출 확인."""
 import os
 import re
 import sys
@@ -62,7 +62,7 @@ with sync_playwright() as p:
 
     print("1) 데스크톱 · 도랏 모드")
     check("페이지 타이틀", "도랏이" in page.title(), page.title())
-    check("버전 표기 v1.9.3", "v1.9.3" in page.inner_text(".app-footer"), page.inner_text(".app-footer"))
+    check("버전 표기 v1.9.4", "v1.9.4" in page.inner_text(".app-footer"), page.inner_text(".app-footer"))
     page.click('[data-mode-btn="dorat"]')
     page.wait_for_timeout(500)
     check("도랏 모드 활성", page.get_attribute("body", "data-mode") == "dorat", page.get_attribute("body", "data-mode"))
@@ -79,7 +79,7 @@ with sync_playwright() as p:
     uniq = set(replies.values())
     check("같은 풀에서 서로 다른 답", len(uniq) >= 5, len(uniq))
 
-    page.screenshot(path=os.path.join(SHOT, "32-v193-dorat-desktop.png"), full_page=False)
+    page.screenshot(path=os.path.join(SHOT, "38-v194-dorat-desktop.png"), full_page=False)
 
     print("2) 다른 모드 정상")
     page.click('[data-mode-btn="clean"]')
@@ -107,7 +107,7 @@ with sync_playwright() as p:
     r = send(page, "니가 더 못생김")
     print("        [미친도랏]", r.replace("\n", " ")[:80])
     check("미친도랏에서도 받아치기", bool(r) and "처음 들어" not in r, r)
-    page.screenshot(path=os.path.join(SHOT, "33-v193-crazy-desktop.png"))
+    page.screenshot(path=os.path.join(SHOT, "39-v194-crazy-desktop.png"))
 
     print("4) 오류 로그")
     check("콘솔 pageerror 없음", not errors, errors[:2])
@@ -128,7 +128,7 @@ with sync_playwright() as p:
     r = send(m, LONG[:120])
     print("        [모바일 장문]", r.replace("\n", " ")[:70])
     check("모바일 장문 응답", bool(r), r)
-    m.screenshot(path=os.path.join(SHOT, "34-v193-dorat-390.png"))
+    m.screenshot(path=os.path.join(SHOT, "40-v194-dorat-390.png"))
     check("모바일 pageerror 없음", not merr, merr[:2])
 
     print("6) 카톡 인앱 자동 탈출")
@@ -173,7 +173,7 @@ with sync_playwright() as p:
     print("        ", stats)
     check("내장 의도 수 표시", stats["intents"].strip().isdigit(), stats["intents"])
     check("내장 답변 14,000 이상", stats["replies"].replace(",", "").isdigit() and int(stats["replies"].replace(",", "")) > 14000, stats["replies"])
-    a.screenshot(path=os.path.join(SHOT, "35-v193-admin-builtin.png"))
+    a.screenshot(path=os.path.join(SHOT, "41-v194-admin-builtin.png"))
 
     br.close()
 
