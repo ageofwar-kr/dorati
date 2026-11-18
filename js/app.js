@@ -359,6 +359,17 @@
     if (!silent) {
       addSystem(window.DORATI_KB.modeNotice[mode]);
       if (mode === "dorat" && state.flavor === "crazy") addSystem(window.DORATI_KB.flavorNotice.crazy);
+      /* 도랏 모드에 처음 들어올 때는 욕부터 박는 인사로 맞이한다 (v1.9.5) */
+      if (mode === "dorat" && !state.doratGreeted) {
+        state.doratGreeted = true;
+        setTimeout(function () {
+          var arr = (window.DORATI_KB.intro || {}).dorat || [];
+          if (!arr.length) return;
+          var t = arr[Math.floor(Math.random() * arr.length)];
+          addBot(escapeHtml(state.nick ? callName(state.nick, t) : t));
+          state.lastBot = { text: t, learnable: false };
+        }, 320);
+      }
     }
   }
 

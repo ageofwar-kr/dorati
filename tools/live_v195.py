@@ -22,7 +22,7 @@ fail = []
 errors = []
 SWEAR = re.compile(r"(시발|씨발|ㅅㅂ|병신|븅신|씹|좆|지랄|개소리|아가리|대가리|꺼져|닥치)")
 TEACH = re.compile(r"그딴 말은 처음 들어|내 사전에 그건 없다|뭐라는 거야")
-POLITE = re.compile(r"(주세요|하세요|합니다|습니다|감사합니다|죄송|😊)")
+POLITE = re.compile(r"(주세요|하세요|합니다|습니다|해요|예요|이에요|감사|죄송|😊)")
 
 
 def check(name, ok, detail=""):
@@ -108,13 +108,13 @@ with sync_playwright() as p:
 
     print("2) 도랏 모드 첫인사")
     set_mode(page, "dorat")
+    page.wait_for_timeout(400)
     page.reload(wait_until="networkidle")
-    page.wait_for_timeout(900)
+    page.wait_for_timeout(1200)
     if page.is_visible("#gate"):
         page.fill("#gate-input", "테스터")
         page.click("#gate-start")
-        page.wait_for_timeout(600)
-    set_mode(page, "dorat")
+        page.wait_for_timeout(900)
     page.wait_for_timeout(900)
     intro = bot_texts(page)
     print("        첫인사:", (intro[-1] if intro else "-")[:70])
@@ -123,15 +123,19 @@ with sync_playwright() as p:
     print("3) 시비 %d건 받아치기" % len(CASES))
     for text, label in CASES:
         r = send(page, text)
-        ok = bool(r) and r != "(응답 없음)" and not TEACH.search(r) and bool(SWEAR.search(r))
-        print("        [%-14s] %s → %s" % (label, text[:26], r.replace("\n", " ")[:56]))
-        check("'%s' 받아치기" % text[:16], ok, r)
+        kind = page.evaluate("""(t) => { var x = window.Engine.answerSync(t, 'dorat', {pairs: [], byNorm: {}});
+            return { kind: x.kind || x.type, intent: x.intent || '', text: x.text || '' }; }""", text)
+        ok = bool(r) and r != "(응답 없음)" and kind.get("kind") == "attack" and not TEACH.search(r)
+        print("        [%-14s] %s → %-12s %s" % (label, text[:24], kind.get("intent"), r.replace("\n", " ")[:50]))
+        check("'%s' 받아치기" % text[:16], ok, "%s / %s" % (kind, r))
 
     print("4) 일상 문장 오탐")
     for text in SAFE:
         r = send(page, text)
-        print("        %-18s → %s" % (text, r.replace("\n", " ")[:52]))
-        check("'%s' 공격 아님" % text, not SWEAR.search(r) or "힘들" in text or "바빴" in text, r)
+        kind = page.evaluate("""(t) => { var x = window.Engine.answerSync(t, 'dorat', {pairs: [], byNorm: {}});
+            return { kind: x.kind || x.type, intent: x.intent || '' }; }""", text)
+        print("        %-18s → %-12s %s" % (text, kind.get("intent"), r.replace("\n", " ")[:42]))
+        check("'%s' 공격 아님" % text, kind.get("kind") != "attack", kind)
     page.screenshot(path=os.path.join(SHOT, "40-v195-dorat-desktop.png"))
 
     print("5) 건전·일반 모드")
