@@ -408,6 +408,21 @@
     return '<div style="font-size:14px;margin-bottom:6px">' + escapeHtml(intro) + "</div>" + head + body;
   }
 
+  /* ── 상대가 던진 욕·시비 수집 (v1.9.4) ───────────────────
+     도랏 모드에서 시비·욕설로 판정된 말을 공용 DB에 쌓아 두고,
+     나중에 다른 사람이 시비 걸 때 그 말을 인용해 되받아치는 데 쓴다.
+     하드 필터(자살·범죄·개인정보)를 통과한 2~160자만 저장된다. */
+  var roastAt = 0;
+
+  function collectRoast(text) {
+    if (!window.Store || !window.Store.roast) return;
+    var t = String(text || "").trim();
+    if (t.length < 2 || t.length > 160) return;
+    if (Date.now() - roastAt < 1500) return;
+    roastAt = Date.now();
+    window.Store.roast(t);
+  }
+
   /* ── 자동학습 ─────────────────────────────────────────── */
   var lastLearnAt = 0;
 
@@ -483,6 +498,7 @@
         trow.remove();
         handleResult(res);
         state.busy = false;
+        if (res && res.kind === "attack") collectRoast(text);
         if (pending) autoLearn(pending, text);
         else if (prevBot && prevBot.learnable) autoLearn(prevBot.text, text);
       }, 350 + Math.random() * 350);
@@ -565,6 +581,7 @@
   function fallbackToEngine(text, prevBot, pending, note) {
     Promise.resolve(window.Engine.answer(text, engineMode(), state.snap)).then(function (res) {
       handleResult(res);
+      if (res && res.kind === "attack") collectRoast(text);
       addSystem(note);
       state.busy = false;
       if (pending) autoLearn(pending, text);
@@ -755,8 +772,12 @@
     kakao();
 
     window.Store.init();
-    window.Store.subscribe(function (snap) { state.snap = snap; });
+    window.Store.subscribe(function (snap) {
+      state.snap = snap;
+      if (window.Engine && window.Engine.setRoasts) window.Engine.setRoasts(snap.roasts || []);
+    });
     state.snap = window.Store.snapshot();
+    if (window.Engine && window.Engine.setRoasts) window.Engine.setRoasts(state.snap.roasts || []);
 
     state.history = loadHistory();
     if (!restore()) {

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""도랏이 v1.9.3 자체 검사 — 쌍욕·받아치기 8,500+ 팩 + 카톡 자동 탈출.
+"""도랏이 v1.9.4 자체 검사 — 쌍욕·받아치기 8,500+ 팩 + 카톡 자동 탈출.
 
 검사 항목
  1) kb-dorat-extra.js 로딩 · 풀별 대사 수 · 총합 8,600 이상 · 중복 0
@@ -132,13 +132,31 @@ html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
 cfg = open(os.path.join(ROOT, "js", "config.js"), encoding="utf-8").read()
 admin = open(os.path.join(ROOT, "admin.html"), encoding="utf-8").read()
 app = open(os.path.join(ROOT, "js", "app.js"), encoding="utf-8").read()
-check("index.html v1.9.3", '<span class="ver">v1.9.3</span>' in html)
+check("index.html v1.9.4", '<span class="ver">v1.9.4</span>' in html)
 check("index.html kb-dorat-extra 로딩", "kb-dorat-extra.js" in html)
-check("index.html 캐시버스트 4.7", "?v=4.7" in html and "?v=4.6" not in html)
-check("config v1.9.3", 'version: "v1.9.3"' in cfg)
+check("index.html 캐시버스트 4.8", "?v=4.8" in html and "?v=4.7" not in html)
+check("config v1.9.4", 'version: "v1.9.4"' in cfg)
 check("admin kb-dorat-extra 로딩", "kb-dorat-extra.js" in admin)
 check("app.js 학습 제외", 'res.kind !== "attack"' in app)
-check("engine 1.9.3", ctx.eval("window.Engine.version") == "1.9.3", ctx.eval("window.Engine.version"))
+check("engine 1.9.4", ctx.eval("window.Engine.version") == "1.9.4", ctx.eval("window.Engine.version"))
+
+print("\n7-b) 시비 수집 · 재활용")
+store = open(os.path.join(ROOT, "js", "store.js"), encoding="utf-8").read()
+eng = open(os.path.join(ROOT, "js", "engine.js"), encoding="utf-8").read()
+check("store.js roast()", "function roast(" in store)
+check("store.js deleteRoast()", "function deleteRoast(" in store)
+check("engine setRoasts", "setRoasts" in eng and "ROAST_FRAMES" in eng)
+check("app collectRoast", "collectRoast" in app)
+check("admin 시비 섹션", "roast-list" in admin and "data-del-roast" in admin)
+ctx.eval("window.Engine.setRoasts([{id:'x', q:'니가더 못생김'},{id:'y', q:'ai 주제에 무용지물'}]);")
+check("roast 2건 주입", ctx.eval("window.Engine.roastCount()") == 2, ctx.eval("window.Engine.roastCount()"))
+quoted = 0
+for i in range(80):
+    r = json.loads(ask("시발 병신아"))
+    if "「" in r.get("text", ""):
+        quoted += 1
+check("수집 시비 인용 답변 발생", quoted > 0, quoted)
+print("        인용 답변 %d/80" % quoted)
 
 print("\n8) 카톡 자동 탈출")
 check("카톡 UA 감지", 'indexOf("kakaotalk")' in app)

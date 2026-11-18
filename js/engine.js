@@ -284,6 +284,12 @@ window.Engine = (function () {
         if (bag && bag.dorat && bag.dorat.length) entry = bag;
       }
     }
+    if (doratMode(mode) && key !== "solo" && ROASTS.length && Math.random() < 0.18) {
+      var rq = roastQuote();
+      if (rq) {
+        return { type: "text", text: rq, intent: id, kind: "attack", how: "roast" };
+      }
+    }
     var pool = withMode(entry, mode);
     if (!pool.length) return null;
     var line = pickFresh("atk:" + key + (entry.id !== id ? ":" + entry.id : ""), pool);
@@ -347,6 +353,34 @@ window.Engine = (function () {
       if (long1) return long1;
     }
     return attackReply(atkBag("atk_final"), mode, "final");
+  }
+
+  /* ── 수집된 시비 활용 (v1.9.4) ─────────────────────────────
+     사람들이 도랏이한테 던진 욕·시비를 공용 DB에서 받아, 다른 사람이 시비 걸 때
+     그 말을 그대로 인용해 되받아친다. 도랏 계열에서만 쓴다. */
+  var ROASTS = [];
+
+  function setRoasts(list) {
+    ROASTS = (list || []).filter(function (r) { return r && r.q; });
+  }
+
+  var ROAST_FRAMES = [
+    "누가 나한테 「{r}」라고 했는데, 너도 그 계보구나",
+    "「{r}」? 그 말 이미 누가 했는데 너도 똑같은 소리 한다",
+    "「{r}」라고 하던 새끼가 있었는데, 그때도 나는 이렇게 받아쳤다",
+    "「{r}」 이거 어디서 많이 들었는데. 너도 그 말밖에 없냐",
+    "아까 어떤 새끼가 「{r}」라고 했는데, 너도 창의성이 없다",
+    "「{r}」라고? 나한테 그런 말 한 사람 셋째가 너다",
+    "「{r}」 이 말, 네가 제일 잘 어울린다. 왜냐면 이미 남이 한 말이니까",
+    "누가 「{r}」라고 했을 때 내가 뭐라고 했는지 아냐. 지금 이 말이다"
+  ];
+
+  function roastQuote() {
+    if (!ROASTS.length) return "";
+    var r = ROASTS[Math.floor(Math.random() * ROASTS.length)];
+    var q = String(r.q || "").replace(/\s+/g, " ").trim();
+    if (q.length > 26) q = q.slice(0, 26) + "…";
+    return pick(ROAST_FRAMES).replace(/\{r\}/g, q);
   }
 
   function doratMode(mode) {
@@ -964,7 +998,7 @@ window.Engine = (function () {
   }
 
   return {
-    version: "1.9.3",
+    version: "1.9.4",
     isAdultLine: isAdultLine,
     normalize: normalize,
     dice: dice,
@@ -973,6 +1007,8 @@ window.Engine = (function () {
     answer: answer,
     answerSync: answerSync,
     detectAttack: detectAttack,
+    setRoasts: setRoasts,
+    roastCount: function () { return ROASTS.length; },
     attackScore: attackScore,
     pickLearned: pickLearned,
     visible: visible,

@@ -7,6 +7,9 @@ window.Store = (function () {
   var LS = "dorati.pairs.v2";
   var pairs = [];
   var byNorm = Object.create(null);
+  /* 상대가 던진 욕·시비 수집분 (v1.9.4) — /pairs에 roast:1 마커로 저장하고 여기로 분리한다 */
+  var roasts = [];
+  var roastSeen = Object.create(null);
   var subs = [];
   var es = null;
   var readyResolve, ready = new Promise(function (r) { readyResolve = r; });
@@ -30,7 +33,7 @@ window.Store = (function () {
   }
 
   function snapshot() {
-    return { pairs: pairs, byNorm: byNorm, count: pairs.length };
+    return { pairs: pairs, byNorm: byNorm, count: pairs.length, roasts: roasts };
   }
 
   function emit() {
@@ -41,11 +44,16 @@ window.Store = (function () {
   }
 
   function fromFirebase(obj) {
-    var out = [];
-    if (!obj) return out;
+    var out = [], ro = [];
+    if (!obj) return { pairs: out, roasts: ro };
     for (var id in obj) {
       var v = obj[id];
-      if (!v || typeof v !== "object" || !v.q || !v.a) continue;
+      if (!v || typeof v !== "object" || !v.q) continue;
+      if (v.roast) {
+        ro.push({ id: id, q: String(v.q).slice(0, 160), qn: v.qn ? String(v.qn) : normalize(v.q), t: Number(v.t || 0) });
+        continue;
+      }
+      if (!v.a) continue;
       out.push({
         id: id,
         q: String(v.q).slice(0, 200),
@@ -59,7 +67,8 @@ window.Store = (function () {
       });
     }
     out.sort(function (a, b) { return b.t - a.t; });
-    return out;
+    ro.sort(function (a, b) { return b.t - a.t; });
+    return { pairs: out, roasts: ro };
   }
 
   function cacheSave() {
@@ -84,14 +93,15 @@ window.Store = (function () {
     return fetch(DB + "/pairs.json", { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (obj) {
-        var list = fromFirebase(obj);
-        if (list.length) {
-          pairs = list;
+        var res = fromFirebase(obj);
+        if (res.pairs.length) {
+          pairs = res.pairs;
+          roasts = res.roasts;
           index();
           cacheSave();
           emit();
         }
-        return list.length;
+        return res.pairs.length;
       })
       .catch(function () { return -1; });
   }
@@ -114,7 +124,9 @@ window.Store = (function () {
   function handleStream(msg) {
     if (!msg || msg.data === undefined) return;
     if (msg.path === "/" && msg.data && typeof msg.data === "object" && !msg.data.q) {
-      pairs = fromFirebase(msg.data);
+      var all = fromFirebase(msg.data);
+      pairs = all.pairs;
+      roasts = all.roasts;
       index(); cacheSave(); emit();
       return;
     }
@@ -126,7 +138,16 @@ window.Store = (function () {
       if (idx >= 0) pairs.splice(idx, 1);
     } else {
       var v = msg.data;
-      if (!v.q || !v.a) return;
+      if (!v.q) return;
+      if (v.roast) {
+        var ri = -1;
+        for (var r = 0; r < roasts.length; r++) { if (roasts[r].id === id) { ri = r; break; } }
+        var rent = { id: id, q: String(v.q).slice(0, 160), qn: v.qn ? String(v.qn) : normalize(v.q), t: Number(v.t || 0) };
+        if (ri >= 0) roasts[ri] = rent; else roasts.unshift(rent);
+        emit();
+        return;
+      }
+      if (!v.a) return;
       var e = {
         id: id, q: String(v.q).slice(0, 200), qn: v.qn ? String(v.qn) : normalize(v.q),
         a: String(v.a).slice(0, 400),
@@ -178,6 +199,41 @@ window.Store = (function () {
     }).catch(function () { return null; });
   }
 
+  /* 상대가 던진 욕·시비 저장 — 하드필터 통과분만, 같은 말은 한 번만 */
+  function roast(text) {
+    var q = String(text || "").replace(/\s+/g, " ").trim().slice(0, 160);
+    if (q.length < 2) return Promise.resolve(null);
+    if (window.Safety && window.Safety.canLearn && !window.Safety.canLearn(q)) return Promise.resolve(null);
+    var qn = normalize(q);
+    if (!qn || roastSeen[qn]) return Promise.resolve(null);
+    for (var i = 0; i < roasts.length; i++) { if (roasts[i].qn === qn) return Promise.resolve(null); }
+    roastSeen[qn] = 1;
+    var body = { q: q, qn: qn, a: "", m: "dorat", t: Date.now(), roast: 1 };
+    return fetch(DB + "/pairs.json", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      if (res && res.name) {
+        roasts.unshift({ id: res.name, q: body.q, qn: qn, t: body.t });
+        emit();
+        return res.name;
+      }
+      return null;
+    }).catch(function () { return null; });
+  }
+
+  function deleteRoast(id) {
+    return fetch(DB + "/pairs/" + encodeURIComponent(id) + ".json", { method: "DELETE" })
+      .then(function () {
+        roasts = roasts.filter(function (r) { return r.id !== id; });
+        emit();
+        return true;
+      }).catch(function () { return false; });
+  }
+
+  function roastList() { return roasts.slice(); }
+
   function vote(id, dir) {
     var ent = null;
     for (var i = 0; i < pairs.length; i++) { if (pairs[i].id === id) { ent = pairs[i]; break; } }
@@ -214,6 +270,9 @@ window.Store = (function () {
     init: init,
     subscribe: subscribe,
     learn: learn,
+    roast: roast,
+    deleteRoast: deleteRoast,
+    roasts: roastList,
     vote: vote,
     report: report,
     snapshot: snapshot,

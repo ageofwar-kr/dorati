@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#111214">
 <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./css/admin.css?v=4.7">
+<link rel="stylesheet" href="./css/admin.css?v=4.8">
 </head>
 <body data-theme="ganji">
 
@@ -72,6 +72,21 @@
     <div id="teach-result" class="teach-result"></div>
   </section>
 
+  <!-- 수집된 시비 (v1.9.4) -->
+  <section class="teach" id="roasts">
+    <div class="teach-top">
+      <h2>🧨 수집된 시비</h2>
+      <span class="teach-model" id="roast-count">0개</span>
+    </div>
+    <p class="hint">사람들이 도랏이한테 던진 욕·시비를 모아 둔 곳이에요. 도랏 모드에서 다른 사람이 시비 걸면
+      이 말들을 그대로 인용해 되받아치는 데 섞어 씁니다. 하드 필터(자살·범죄·개인정보)를 통과한 2~160자만 저장돼요.</p>
+    <div class="teach-act">
+      <button id="roast-reload" type="button">🔄 새로고침</button>
+      <span id="roast-status"></span>
+    </div>
+    <div id="roast-list" class="list"><div class="empty">불러오는 중…</div></div>
+  </section>
+
   <div class="stats">
     <div class="stat"><b id="s-total">0</b><span>전체 학습</span></div>
     <div class="stat"><b id="s-clean">0</b><span>건전</span></div>
@@ -126,8 +141,8 @@
   <div id="b-list" class="list"><div class="empty">불러오는 중…</div></div>
 </section>
 
-<script src="./js/config.js?v=4.7"></script>
-<script src="./js/safety.js?v=4.7"></script>
+<script src="./js/config.js?v=4.8"></script>
+<script src="./js/safety.js?v=4.8"></script>
 <script>
 (function () {
   "use strict";
@@ -229,14 +244,21 @@
     return d.toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
   }
 
+  var roasts = [];
+
   function load() {
     fetch(DB + "/pairs.json", { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (obj) {
         pairs = [];
+        roasts = [];
         for (var id in (obj || {})) {
           var v = obj[id];
           if (!v || typeof v !== "object" || !v.q) continue;
+          if (v.roast) {
+            roasts.push({ id: id, q: String(v.q).slice(0, 160), t: Number(v.t || 0) });
+            continue;
+          }
           pairs.push({
             id: id, q: v.q, a: v.a || "", m: v.m || "normal", t: Number(v.t || 0),
             src: v.src || "",
@@ -244,12 +266,56 @@
           });
         }
         renderHuman();
+        renderRoasts();
         if (currentTab === "builtin" && builtin.loaded) renderBuiltin();
       })
       .catch(function () {
         document.getElementById("list").innerHTML = '<div class="empty">불러오기 실패 — 잠시 뒤 새로고침해 주세요.</div>';
       });
   }
+
+  /* ══ 수집된 시비 ══════════════════════════════════════ */
+  function renderRoasts() {
+    var box = document.getElementById("roast-list");
+    var cnt = document.getElementById("roast-count");
+    if (!box) return;
+    cnt.textContent = roasts.length + "개";
+    if (!roasts.length) {
+      box.innerHTML = '<div class="empty">아직 모인 시비가 없어요. 도랏 모드에서 욕이 오가면 자동으로 쌓여요.</div>';
+      return;
+    }
+    roasts.sort(function (a, b) { return b.t - a.t; });
+    box.innerHTML = roasts.slice(0, 200).map(function (r) {
+      return '<div class="item" data-roast="' + esc(r.id) + '">' +
+        '<div><div class="q">' + esc(r.q) + '</div>' +
+        '<div class="meta"><span class="tag dorat">시비</span><span>' + when(r.t) + '</span></div></div>' +
+        '<div class="acts"><button type="button" class="del" data-del-roast="' + esc(r.id) + '">삭제</button></div>' +
+        '</div>';
+    }).join("");
+  }
+
+  document.getElementById("roast-list").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-del-roast]");
+    if (!btn) return;
+    var id = btn.getAttribute("data-del-roast");
+    var item = roasts.filter(function (r) { return r.id === id; })[0];
+    if (!item) return;
+    if (!confirm("이 시비를 삭제할까요?\n\n" + item.q.slice(0, 60))) return;
+    document.getElementById("roast-status").textContent = "삭제 중…";
+    fetch(DB + "/pairs/" + encodeURIComponent(id) + ".json", { method: "DELETE" })
+      .then(function () {
+        roasts = roasts.filter(function (r) { return r.id !== id; });
+        renderRoasts();
+        document.getElementById("roast-status").textContent = "삭제했어요";
+      })
+      .catch(function () { document.getElementById("roast-status").textContent = "삭제 실패 — 규칙 확인 필요"; });
+  });
+
+  document.getElementById("roast-reload").addEventListener("click", function () {
+    document.getElementById("roast-status").textContent = "불러오는 중…";
+    load();
+    setTimeout(function () { document.getElementById("roast-status").textContent = ""; }, 1200);
+  });
 
   /* 제미나이가 가르친 말 = 기본 내장에 모아 보여준다 */
   function geminiPairs() {
@@ -280,6 +346,7 @@
     var sort = document.getElementById("sort").value;
     var rows = pairs.filter(function (p) {
       if (p.src === "gemini") return false;      /* 사람이 가르친 말만 */
+      if (!p.a) return false;                     /* 시비 수집분은 위 섹션에서 */
       if (mf && p.m !== mf) return false;
       if (!q) return true;
       return (p.q + " " + p.a).toLowerCase().indexOf(q) >= 0;
@@ -526,9 +593,9 @@
     if (builtin.loaded) return Promise.resolve();
     if (builtin.loading) return builtin.loading;
     document.getElementById("b-list").innerHTML = '<div class="empty">내장 대화를 불러오는 중…</div>';
-    builtin.loading = loadScript("./js/kb-dialogues.js?v=4.7")
-      .then(function () { return loadScript("./js/kb-corpus.js?v=4.7"); })
-      .then(function () { return loadScript("./js/kb-dorat-extra.js?v=4.7"); })
+    builtin.loading = loadScript("./js/kb-dialogues.js?v=4.8")
+      .then(function () { return loadScript("./js/kb-corpus.js?v=4.8"); })
+      .then(function () { return loadScript("./js/kb-dorat-extra.js?v=4.8"); })
       .then(function () {
         var C = window.DORATI_CORPUS || { intents: [], pairs: [] };
         builtin.items = [];
