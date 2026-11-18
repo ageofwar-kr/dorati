@@ -132,6 +132,25 @@ r = json.loads(ask("니가더 못생김"))
 check("kind=attack", r.get("kind") == "attack", r.get("kind"))
 check("askTeachFor 없음", not r.get("askTeachFor"), r.get("askTeachFor"))
 
+print("\n6-b) 모든 의도·Q&A 최소 답변 5개")
+bad = json.loads(ctx.eval("""
+(function () {
+  var bad = [], C = window.DORATI_CORPUS;
+  (C.intents || []).forEach(function (it) {
+    ["clean", "normal", "dorat"].forEach(function (m) {
+      if (!it[m] || it[m].length < 5) bad.push(it.id + ":" + m);
+    });
+  });
+  (C.pairs || []).forEach(function (p, i) {
+    ["clean", "normal", "dorat"].forEach(function (m) {
+      if (!p[m] || p[m].length < 5) bad.push("pair" + i + ":" + m);
+    });
+  });
+  return JSON.stringify(bad);
+})()
+"""))
+check("모든 의도·Q&A 5개 이상", not bad, bad[:5])
+
 print("\n7) 버전 · 연결")
 html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
 cfg = open(os.path.join(ROOT, "js", "config.js"), encoding="utf-8").read()

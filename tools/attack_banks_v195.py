@@ -1701,3 +1701,21 @@ FAM["seoul"] = (
     X("{o} {b}, {t}", o=SL_OPN, b=SL_BDY2, t=_PROF_TAG)
     + X("{o} {b}", o=SL_OPN, b=SL_BDY2)
 )
+
+# ── 사투리 풀의 존댓말 잔재를 거친 반말로 바꾼다 (v1.9.5-4) ──
+_POLITE_FIX = [
+    ("쓰시유", "써라"), ("드시유", "먹어라"), ("계시는", "있는"), ("새우셨슈", "새웠냐"),
+    ("대단하슈", "웃기다"), ("하시유", "해라"), ("하시네", "하네"), ("그러실", "그럴"),
+    ("보시유", "봐라"), ("하실", "할"), ("하셨", "했"), ("하시면", "하면"),
+    ("배우시유", "배워라"), ("말씀하시", "말하"), ("하십니다", "한다"), ("하세요", "해라"),
+]
+
+
+def _rough(s):
+    for a, b in _POLITE_FIX:
+        s = s.replace(a, b)
+    return s
+
+
+FAM = dict((k, [_rough(x) for x in v]) for k, v in FAM.items())
+HAND = dict((k, [_rough(x) for x in v]) for k, v in HAND.items())
