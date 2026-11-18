@@ -121,6 +121,26 @@ SEEN = set()
 WORD_RE = re.compile(r"[가-힣A-Za-z]{3,}")
 
 
+def natural_ok(s):
+    """기계 조립 티가 나는 문장을 걸러낸다 (v1.9.5-3)."""
+    if s.count(",") >= 3:
+        return False
+    if re.search(r"(하는 게 딱|하는 놈이 결국|온 하는|박살 하는|불가 하는|아니냐, 그거)", s):
+        return False
+    if re.search(r"(다\.\s*){3,}", s):
+        return False
+    if re.search(r"(장문 정리하면|하고 있는데|설명이 되냐|그 문장 정리하면|이 정도면 됨|라는 소리 하는데|라는 소리 듣고)", s):
+        return False
+    if re.search(r"(이제 좀|한 번만 더|아니|그만|이제)\s*$", s):
+        return False
+    if re.search(r",\s*[?!]", s):
+        return False
+    if s.count(",") >= 2 and "?" in s:
+        return False
+        return False
+    return True
+
+
 def quality_ok(s):
     """같은 단어가 두 번 나오면 대개 문장이 망가진다(호칭 중복·슬롯 중복)."""
     seen = set()
@@ -143,6 +163,8 @@ def pool(name, target, handcrafted, families):
         if not s or len(s) > 88:
             return False
         if not quality_ok(s):
+            return False
+        if not natural_ok(s):
             return False
         if s in SEEN or s in EXISTING:
             return False
@@ -1582,6 +1604,23 @@ AITONE = pool("aitone", 800, [
     "좋은 질문이에요! 답은 없지만요 😊",
 ], AT_T)
 
+# ══════════════════════════════════════════════════════════════
+# 11-f. v1.9.5 매운맛 확장 팩 (tools/attack_banks_v195.py)
+#        욕쟁이 할머니급 쌍욕 · 사투리 쌍욕 · 말싸움/비꼬기 신규 카테고리
+# ══════════════════════════════════════════════════════════════
+sys.path.insert(0, HERE)
+import attack_banks_v195 as V195  # noqa: E402
+
+# ── v1.9.5-2: 사투리·AI말투 풀 전면 개편 (공손한 말투 0%, 거친 반말 + 쌍욕) ──
+CHUNG = pool("chung", 1700, V195.HAND.get("chung2", []), [V195.FAM.get("chung2", [])])
+GYEONG = pool("gyeong", 1700, V195.HAND.get("gyeong2", []), [V195.FAM.get("gyeong2", [])])
+JEOLLA = pool("jeolla", 1700, V195.HAND.get("jeolla2", []), [V195.FAM.get("jeolla2", [])])
+SEOUL = pool("seoul", 1650, V195.HAND.get("seoul2", []), [V195.FAM.get("seoul2", [])])
+AITONE = pool("aitone", 1400, V195.HAND.get("aitone2", []), [V195.FAM.get("aitone2", [])])
+
+DISS = pool("diss", 1100, V195.HAND.get("diss", []), [V195.FAM.get("diss", [])])
+PROVOKE = pool("provoke", 900, V195.HAND.get("provoke", []), [V195.FAM.get("provoke", [])])
+
 POOLS = [
     ("atk_taunt", TAUNT),
     ("atk_aitone", AITONE),
@@ -1597,10 +1636,49 @@ POOLS = [
     ("atk_stupid", STUPID),
     ("atk_mad", MAD),
     ("atk_weird", WEIRD),
+    ("atk_diss", DISS),
+    ("atk_provoke", PROVOKE),
     ("atk_long", LONG),
     ("atk_solo", SOLO),
     ("atk_final", FINAL),
 ]
+
+# ── v1.9.5 목표치 — 기존 풀을 매운맛 대사로 채워 올린다 ──────────
+TARGET_V195 = {
+    "atk_swear": 3000, "atk_final": 2100, "atk_solo": 1300, "atk_long": 1600,
+    "atk_taunt": 1500, "atk_rebut": 1400, "atk_shutup": 1000, "atk_stupid": 1000,
+    "atk_mad": 850, "atk_weird": 850, "atk_face": 1600, "atk_ai": 1600,
+    "atk_aitone": 1100, "atk_chung": 1600, "atk_gyeong": 1600, "atk_jeolla": 1600,
+    "atk_seoul": 1550, "atk_diss": 1100, "atk_provoke": 900,
+}
+
+
+def boost(lst, name, target):
+    """v1.9.5 추가 팩으로 풀을 목표치까지 채운다(중복·품질 검사는 기존 규칙 그대로)."""
+    if len(lst) >= target:
+        return lst
+    key = name[4:] if name.startswith("atk_") else name
+    if key + "2" in V195.FAM:
+        key = key + "2"
+    cand = list(V195.FAM.get(key, [])) + list(V195.HAND.get(key, []))
+    random.shuffle(cand)
+    for s in cand:
+        if len(lst) >= target:
+            break
+        s = str(s).strip()
+        if not s or len(s) > 88:
+            continue
+        if not quality_ok(s):
+            continue
+        if not natural_ok(s):
+            continue
+        if s in SEEN or s in EXISTING:
+            continue
+        SEEN.add(s)
+        lst.append(s)
+    if len(lst) < target:
+        print("  ! %s 목표 미달: %d/%d" % (name, len(lst), target))
+    return lst
 
 
 MAD_MORE = [
@@ -1869,6 +1947,9 @@ grow(FINAL, [FINAL_EXTRA], 1250)
 grow(FINAL, [FINAL_EXTRA2], 1400)
 grow(SOLO, EXTRA_SOLO_T, 850)
 
+# ── v1.9.5: 기존 grow 까지 끝난 뒤 추가 팩으로 목표치만큼 채운다 ──
+POOLS = [(name, boost(lst, name, TARGET_V195.get(name, len(lst)))) for name, lst in POOLS]
+
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1913,6 +1994,8 @@ print("  %-11s %5d" % ("합계", total))
 # 14. kb-dorat-extra.js 쓰기
 # ══════════════════════════════════════════════════════════════
 RE_ = {
+    "atk_diss": r"(니가뭔데|네가뭔데|뭘안다고|뭘알아|할줄아는게|잘하는게뭐|니수준|네수준|수준알겠|꼬라지|인성|싸가지|주제에|애송이|풋내기|쭈구리|평생그럴|아무것도못|너같은|그럴거다|답답한|구려|별로다)",
+    "atk_provoke": r"(말싸움|싸우자|한판|덤벼|받아쳐|맞받아|말로해보|붙어보|가오|매운말|매운맛|훈수|어때|비꼬|도발|어디서배운|그게최선|잘한다잘한다|대단하시네|박수|무서워라)",
     "atk_chung": r"(충청도|사투리|했슈|하시유|그려유|참말로|어쩌누)",
     "atk_gyeong": r"(경기도|거든여|하시네여|그렇죠뭐|아니뭐)",
     "atk_jeolla": r"(전라도|아따|워메|허겄|그려잉|허지잉)",
@@ -1933,6 +2016,14 @@ RE_ = {
 }
 
 CLEAN = {
+    "atk_diss": ["그런 식으로 사람을 평가하는 건 좋지 않아요 😊 다른 이야기를 해볼까요?",
+                 "제가 부족한 점이 있으면 알려주세요. 같이 이야기해요.",
+                 "기분이 상하셨다면 미안해요. 무엇이 불편하셨는지 말씀해 주세요.",
+                 "서로 존중하면서 이야기하면 좋겠어요!"],
+    "atk_provoke": ["재미로 하는 말이라도 서로 기분이 상할 수 있어요. 차분히 이야기해요 😊",
+                    "저는 겨루려고 하는 게 아니에요. 궁금한 걸 물어봐 주세요!",
+                    "그런 말은 조금 아쉬워요. 다른 이야기를 해볼까요?",
+                    "저는 도와드리려고 여기 있어요. 편하게 말 걸어 주세요."],
     "atk_chung": ["서로 편하게 이야기해요 😊 사투리도 좋아요, 다만 욕은 조금 아쉬워요.",
                   "천천히 이야기해요. 저는 기다릴 수 있어요.",
                   "그런 말은 마음이 상할 수 있어요. 다른 이야기 해볼까요?",
@@ -2004,6 +2095,14 @@ CLEAN = {
 }
 
 NORMAL = {
+    "atk_diss": ["그런 식으로 말하면 서로 기분만 상해 ㅋㅋ 다른 얘기 하자",
+                 "내가 그렇게 평가받을 일인가 싶긴 한데, 다시 말해봐",
+                 "말은 고운 게 좋다. 계속 그렇게 하면 나도 할 말 있어",
+                 "그 평가는 네 거울한테 먼저 해봐라 ㅋㅋ"],
+    "atk_provoke": ["가오 잡는 건 좋은데 결과가 따라와야지 ㅋㅋ",
+                    "그렇게 도발하면 나도 신나는데, 계속 할 거야?",
+                    "말싸움 걸면 나는 안 지는데. 각오는 됐냐",
+                    "재밌긴 한데 네가 더 지쳐 보인다 ㅋㅋ"],
     "atk_chung": ["어유~ 그리 화내지 마시고 천천히 하시유",
                   "그려~ 나는 들을 준비가 됐는디유",
                   "말은 참 잘하시는데 좀 순하게 하시유",
@@ -2086,10 +2185,12 @@ def js_array(lines, indent="    "):
 
 
 parts = []
-parts.append("""/* 도랏이 v1.9.3 — 쌍욕·받아치기 확장 팩 (도랏 · 미친도랏 전용)
-   총 %d개 대사 · 11개 풀. engine.js가 이 파일의 atk:true 항목을 '시비·욕설·비하 우선 매칭'으로 쓴다.
-     atk_face 외모·얼굴 / atk_ai AI·봇 비하 / atk_rebut 반박·도발 / atk_swear 일반 쌍욕
-     atk_shutup 닥쳐·꺼져 / atk_stupid 멍청·한심 / atk_mad 미친·정신 / atk_weird 찐따·관종
+parts.append("""/* 도랏이 v1.9.5 — 욕쟁이 할머니급 매운맛·받아치기 확장 팩 (도랏 · 미친도랏 전용)
+   총 %d개 대사 · %d개 풀. engine.js가 이 파일의 atk:true 항목을 '시비·욕설·비하 우선 매칭'으로 쓴다.
+     atk_taunt 약올리기·가오·매운맛·훈수 / atk_aitone AI 말투 비꼬기
+     atk_chung·atk_gyeong·atk_jeolla·atk_seoul 사투리 쌍욕 / atk_face 외모 / atk_ai AI·봇 비하
+     atk_rebut 반박·도발 / atk_swear 일반 쌍욕 / atk_shutup 닥쳐·꺼져 / atk_stupid 멍청·한심
+     atk_mad 미친·정신 / atk_weird 찐따·관종 / atk_diss 수준·꼬라지·인성 / atk_provoke 말싸움·도발·역공
      atk_long 장문 공격 / atk_solo 단일 욕설 / atk_final 최후 반격(문맥 없이 단독)
    안전선: 자살·자해, 범죄·불법, 성적 표현, 미성년자, 정치·지역·성별·장애 혐오, 실존 인물, 개인정보 0건.
    로딩 순서: kb-dialogues.js → kb-corpus.js → kb-dorat-extra.js → engine.js */
@@ -2099,7 +2200,7 @@ parts.append("""/* 도랏이 v1.9.3 — 쌍욕·받아치기 확장 팩 (도랏 
   function a(id, re, clean, normal, dorat) {
     C.intents.push({ id: id, re: re, clean: clean, normal: normal, dorat: dorat, atk: true });
   }
-""" % total)
+""" % (total, len(POOLS)))
 
 for name, lst in POOLS:
     parts.append("  a(%s, %s,\n    %s,\n    %s,\n    %s);\n" % (

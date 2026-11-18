@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#111214">
 <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./css/admin.css?v=4.8">
+<link rel="stylesheet" href="./css/admin.css?v=4.9">
 </head>
 <body data-theme="ganji">
 
@@ -141,8 +141,8 @@
   <div id="b-list" class="list"><div class="empty">불러오는 중…</div></div>
 </section>
 
-<script src="./js/config.js?v=4.8"></script>
-<script src="./js/safety.js?v=4.8"></script>
+<script src="./js/config.js?v=4.9"></script>
+<script src="./js/safety.js?v=4.9"></script>
 <script>
 (function () {
   "use strict";
@@ -593,9 +593,10 @@
     if (builtin.loaded) return Promise.resolve();
     if (builtin.loading) return builtin.loading;
     document.getElementById("b-list").innerHTML = '<div class="empty">내장 대화를 불러오는 중…</div>';
-    builtin.loading = loadScript("./js/kb-dialogues.js?v=4.8")
-      .then(function () { return loadScript("./js/kb-corpus.js?v=4.8"); })
-      .then(function () { return loadScript("./js/kb-dorat-extra.js?v=4.8"); })
+    builtin.loading = loadScript("./js/kb-dialogues.js?v=4.9")
+      .then(function () { return loadScript("./js/kb-corpus.js?v=4.9"); })
+      .then(function () { return loadScript("./js/kb-dorat-extra.js?v=4.9"); })
+      .then(function () { return loadScript("./js/kb-pad.js?v=4.9"); })
       .then(function () {
         var C = window.DORATI_CORPUS || { intents: [], pairs: [] };
         builtin.items = [];

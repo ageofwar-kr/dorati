@@ -1,6 +1,6 @@
 /* 설정 — 공용 DB / 사전 / 제미나이 중계 연결 */
 window.DORATI_CONFIG = {
-  version: "v1.9.4",
+  version: "v1.9.5",
   /* 공용 학습 DB (Firebase Realtime Database, 싱가포르) */
   dbUrl: "https://dorati-99953-default-rtdb.asia-southeast1.firebasedatabase.app",
   /* 국립국어원 표준국어대사전 OpenAPI 중계 (CORS 우회). 살아있으면 이 주소를 먼저 쓴다. */
@@ -20,5 +20,5 @@ window.DORATI_CONFIG = {
   smartWarmTtl: 120000,
   /* 모델에 보내는 문맥 상한 — 최근 4턴(8메시지) */
   smartContextMsgs: 8,
-  version_check: "1.9.4"
+  version_check: "1.9.5"
 };

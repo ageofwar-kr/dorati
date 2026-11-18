@@ -1,5 +1,8 @@
-/* 도랏이 대화 엔진 v1.9.3 — 정규화 / 인덱스 매칭 / 문장 패턴 / 사전질문 / 모드별 답변
+/* 도랏이 대화 엔진 v1.9.5 — 정규화 / 인덱스 매칭 / 문장 패턴 / 사전질문 / 모드별 답변
    · v1.9.3: 시비·욕설·AI 비하·장문 공격을 먼저 감지해 kb-dorat-extra.js의 받아치기 풀로 답한다.
+   · v1.9.5: 초성·숫자·기호 우회(ㅅ1ㅂ, 시.발, ㅂ ㅅ)와 붙여쓴 연타 욕(개병신따까리새끼야),
+     커뮤 은어(가오·매운말·훈수·뇌절·억까), 반말 시비·비꼬기까지 감지해 즉시 받아친다.
+     도랏 모드에서는 공손한 말투를 걸러내고 거친 반말·쌍욕만 고른다.
    · 내장 코퍼스(kb-corpus.js) 275개 의도 × 3모드 × 3답변 + 46개 Q&A쌍 × 3모드 × 3답변
    · 정확 일치 Map → 의도 정규식(문자 인덱스 프리필터) → 문장 패턴 → 사전 → dice 유사도 순
    · 같은 말을 반복해도 답이 겹치지 않도록 최근 답변 회피 */
@@ -41,6 +44,20 @@ window.Engine = (function () {
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
+  /* ── 도랏 모드 공손함 차단 (v1.9.5) ─────────────────────────
+     "~해요 / ~합니다 / 죄송 / 😊" 같은 순한 말투가 도랏 모드에서 나가면
+     상대에게 밀린 것처럼 보인다. 도랏 계열에서는 그런 줄을 빼고 고른다. */
+  var DORAT_POLITE = /(해요|합니다|습니다|하세요|해주세요|주세요|할게요|드릴게요|네요|군요|하십니다|시겠어요|십시오|😊|😄|🌿|🥺|부탁드|죄송|미안|괜찮아요|기다릴게요|어요[.!?~]*$)/;
+
+  function rudeOnly(arr) {
+    if (!arr || !arr.length) return arr || [];
+    var out = [];
+    for (var i = 0; i < arr.length; i++) {
+      if (!DORAT_POLITE.test(arr[i])) out.push(arr[i]);
+    }
+    return out.length ? out : arr;
+  }
+
   function withMode(bag, mode) {
     if (!bag) return [];
     if (mode === "dorat_pure") {
@@ -49,12 +66,12 @@ window.Engine = (function () {
       for (var i = 0; i < src.length; i++) {
         if (!isAdultLine(src[i])) pure.push(src[i]);
       }
-      if (pure.length) return pure;
+      if (pure.length) return rudeOnly(pure);
       return bag.normal || bag.clean || [];
     }
     if (mode === "dorat_crazy") mode = "dorat";
     if (mode === "clean" && bag.clean && bag.clean.length) return bag.clean;
-    if (mode === "dorat" && bag.dorat && bag.dorat.length) return bag.dorat;
+    if (mode === "dorat" && bag.dorat && bag.dorat.length) return rudeOnly(bag.dorat);
     if (mode === "normal" && bag.normal && bag.normal.length) return bag.normal;
     return bag.normal || bag.clean || bag.dorat || [];
   }
@@ -140,7 +157,7 @@ window.Engine = (function () {
     return flat;
   }
 
-  /* ── 시비·욕설·비하 감지 (v1.9.3) ─────────────────────────
+  /* ── 시비·욕설·비하 감지 (v1.9.3 → v1.9.5 확장) ───────────
      kb-dorat-extra.js가 넘긴 atk:true 항목을 우선 매칭 순서로 컴파일한다.
      · 단일 욕설(시발·병신·꺼져…)은 한 단어만으로도 받아친다.
      · 욕설+2인칭 / 직접 비하어 / 장문 공격이면 카테고리 풀에서 답한다.
@@ -165,14 +182,36 @@ window.Engine = (function () {
     return null;
   }
 
-  /* 직접 비하·욕설 (가중치 3) */
-  var ATK_STRONG = /(병신|병싄|빙신|븅신|ㅄ|ㅂㅅ|개새끼|개자식|쌔끼|색기|새끼|등신|머저리|찐따|관종|못생|못쌩|못상|못났|와꾸|면상|멍청|무용지물|쓸모없|고장난|고장났|봇주제|ai주제|데이터쪼가리|코드쪼가리|반박해|반박할|반박좀|어쩔|긁혔|할말없|닥쳐|닥처|닥치|꺼져|꺼저|껴져|거져|아가리|주둥이|지랄|질랄|개소리|헛소리|뻘짓|저능|똘추|또라이|빡대가리|대가리|무식|역겹|극혐|재수없|부들|발악|약올|비웃|쪽팔|발광|증명해|증명하|근거대|덤벼|해보시지|말로만|입만살|정신차려|정신좀|미쳤냐|미쳤어|약먹었|약빨았|발작|환각|어그로|오지랖|뇌없|뇌가없|맞는말|거울보고|거울이나|거울좀|거울봐)/;
+  /* 직접 비하·욕설 (가중치 3) — v1.9.5: 나무위키·커뮤니티 욕설 목록까지 반영 */
+  var ATK_STRONG = /(병신|병싄|빙신|븅신|븅딱|ㅄ|ㅂㅅ|개새끼|개새|개자식|쌔끼|색기|새끼|등신|머저리|찐따|관종|못생|못쌩|못상|못났|빻았|와꾸|면상|상판|멍청|무용지물|쓸모없|고장난|고장났|봇주제|ai주제|데이터쪼가리|코드쪼가리|반박해|반박할|반박좀|어쩔|긁혔|할말없|닥쳐|닥처|닥치|꺼져|꺼저|껴져|거져|아가리|주둥이|지랄|질랄|개소리|헛소리|뻘짓|저능|똘추|또라이|빡대가리|빡통|빡추|대가리|무식|역겹|극혐|재수없|부들|발악|약올|비웃|쪽팔|발광|증명해|증명하|근거대|덤벼|해보시지|말로만|입만살|정신차려|정신좀|미쳤냐|미쳤어|약먹었|약빨았|발작|환각|어그로|오지랖|뇌없|뇌가없|맞는말|거울보고|거울이나|거울좀|거울봐|꼴통|꼬라지|쩌리|쪼다|쫄보|찌질|허접|호구|잉여|쥐새끼|천치|후레자식|호로자식|개판|개차반|개수작|개망나니|니기미|지기미|뻐큐|대갈통|대갈빡|닭대가리|돌대가리|새대가리|빈대가리|꼴값)/;
   /* 상황 욕설 (가중치 2) — 2인칭이 같이 있어야 공격으로 본다 */
-  var ATK_SOFT = /(시발|씨발|씨팔|ㅅㅂ|썅|염병|엿|좆|씹|ㅈㄹ|존나|ㅈㄴ|미친|바보|쓰레기|빡치|빡침|토나와|이상하|못나|못됐|별로)/;
+  var ATK_SOFT = /(시발|씨발|씨팔|시팔|쉬발|슈발|씨부랄|시부랄|씨방새|씨벌|씨댕|씹새|씹년|씹자식|씹지랄|씹창|ㅅㅂ|ㅆㅂ|ㅅㅍ|썅|쌍놈|쌍년|염병|엠창|니미|옌장|우라질|육시랄|제기랄|젠장|엿|좆|좇|좆같|좆까|좆나|좆밥|좆만|좆대가리|좆병신|씹|ㅈㄹ|ㅈㄴ|존나|졸라|개좆|개씹|개씨발|개같|씹같|좆같|미친|바보|쓰레기|허접쓰레기|빡치|빡침|토나와|이상하|못나|못됐|별로|꺼져|닥쳐|아닥|뒈져|골로|짬뽕|말귀)/;
   /* 2인칭 호칭 (가중치 1) — 띄어쓰기 기준으로 봐야 '너무·아니'를 안 잡는다 */
-  var ATK_ADDR = /(^|[\s"'“(])(니|너|넌|네가|니가|너네|니네|당신|야|야이)([\s,.!?~ㅋ"'”)]|$)/;
-  /* 한 단어만 던진 욕설 */
-  var ATK_SOLO = /^(시발|씨발|씨팔|시팔|쉬발|ㅅㅂ|ㅆㅂ|썅|쌍|염병|념병|엿|좆|좇|좆같|좇같|좆까|씹|ㅈㄹ|지랄|질랄|병신|병싄|빙신|븅신|ㅂㅅ|ㅄ|개새끼|개자식|쌔끼|색기|개소리|헛소리|닥쳐|닥처|닥치|꺼져|꺼저|껴져|거져|아가리|주둥이|등신|머저리|한심|찐따|미친놈|미친년|미친새끼|또라이|빡대가리|호구|재수없|역겹|극혐|씨발련|시발련)(아|야|련아|놈아|년아)?(ㅋㅋ|ㅎㅎ|!|\?|~)*$/;
+  var ATK_ADDR = /(^|[\s"'“(])(니|너|넌|네가|니가|너가|너네|니네|당신|야|야이)([\s,.!?~ㅋ"'”)]|$)/;
+  /* 한 단어만 던진 욕설 — 초성·줄임·나무위키식 표기까지 (v1.9.5) */
+  var ATK_SOLO = /^(시발|씨발|씨팔|시팔|쉬발|슈발|씨부랄|시부랄|씨방새|씨벌|씨댕|ㅅㅂ|ㅆㅂ|ㅅㅍ|썅|쌍|쌍놈|쌍년|염병|념병|엠창|니미|엿|좆|좇|좆같|좇같|좆까|좆나|좆밥|좆만|좆대가리|좆병신|씹|씹새|씹년|씹자식|씹지랄|ㅈㄹ|ㅇㅈㄹ|지랄|질랄|지랄발광|병신|병싄|빙신|븅신|븅딱|ㅂㅅ|ㅄ|개새끼|개새|개자식|ㄱㅅㄲ|ㅅㅂㅅㄲ|ㅆㅂㅅㄲ|ㅂㅅㅅㄲ|쌔끼|색기|새끼|ㅅㄲ|개소리|헛소리|닥쳐|닥처|닥치|ㄷㅊ|꺼져|꺼저|껴져|거져|ㄲㅈ|아가리|아닥|주둥이|주둥아리|등신|머저리|한심|찐따|미친놈|미친년|미친새끼|또라이|돌았다|빡대가리|빡통|꼴통|호구|허접|쩌리|쫄보|찌질이|찌질|쪼다|개차반|개판|후레자식|호로자식|뻐큐|ㅗ|ㅗㅗ|재수없|역겹|극혐|씨발련|시발련|씨발놈|시발놈|개좆|개씹|씹새끼|좆까|ㅈㄲ|ㅈㅂ)(아|야|련아|놈아|년아|새끼야|시키야)?(ㅋㅋ|ㅎㅎ|!|\?|~|\^)*$/;
+
+  /* ── v1.9.5 우회 표기 흡수 ──────────────────────────────────
+     ㅅ1ㅂ · 시.발 · ㅂ ㅅ · 병1신 · 병ㅅ · ㅈ.ㄹ 처럼 숫자·기호로 피해도 잡는다.
+     normalize가 공백·기호를 이미 지우므로, 남은 숫자만 제거하면 원형이 드러난다. */
+  function deOb(t) {
+    return String(t || "").replace(/[0-9]/g, "").replace(/ㅣ/g, "ㅣ");
+  }
+  var ADDR_HEAD = /^(야이|야|넌|너가|너네|니네|니가|네가|당신|도랏이|도랏|챗봇|로봇|봇|ai)/;
+  var ADDR_TRAP = /^(너무|야구|야간|야생|야근|니모|이야기|아니|너희들)/;
+  /* 2인칭·도랏이 지목 — 띄어쓰기 없는 단문도 잡는다 */
+  function addrHit(raw, t) {
+    if (ATK_ADDR.test(String(raw || ""))) return true;
+    if (/(도랏이|도랏|챗봇|너네|니네|니가|네가|너가|너한테|니한테|너랑|니랑)/.test(t)) return true;
+    if (ADDR_HEAD.test(t) && !ADDR_TRAP.test(t)) return true;
+    return false;
+  }
+  /* 지목이 없어도 그 자체로 시비인 말 — 커뮤 은어·비하 표현 포함 (v1.9.5) */
+  var ATK_HARD2 = /(니가뭔데|네가뭔데|니가뭐라|뭘안다고|뭘알아|할줄아는게|잘하는게뭐|잘하는게없|니수준|네수준|수준알겠|니인생|네인생|꼬라지|싸가지|인성문제|인성쓰레기|주제에|애송이|풋내기|쭈구리|말대꾸|깝치|지껄이|집어쳐|집어치워|입다물|아닥|짜져있어|쳐박혀|평생그럴|아무것도못|너같은|그럴거다|한심한새끼|뇌절|급발진|정신승리|쉐도우복싱|방구석여포|키보드워리어|아가리파이터|억까|뇌피셜|능지|자의식과잉|피해망상|설명충|빌런|트롤|양아치|민폐|진상|무용지물|쓸모없|잉여|왜사냐|왜살아|없어도된다|사라져|반말해|반말하냐|반말하지마|말귀못|말귀어두|귀막았|눈삿|머리에구멍|머리빈|대갈빡|꼴값|개같|좆같|씹같|존나못|ㅈㄴ못|개못하|얼굴이나|거울이나|반성해|정신나갔|약먹었|약빨았|돌았냐|사이코|병신같|븅신같|개노잼|개노맛|개구림|개오바|병먹금|ㅂㅁㄱ|훈수|매운말|매운맛|문해력|어디서배운|그게최선|그게답이냐|어쩌라는건지|핵심을찔렀|가오|말싸움|한판|붙자|말로해보|받아쳐|덤벼봐|비꼬)/;
+  /* 지목이 있어야 공격인 말 — 일상 문장 오탐을 막는다 */
+  var ATK_SOFT2 = /(못하네|못하냐|노잼|노맛|구림|오바|유치|쪽팔|민망|불쌍|안쓰럽|측은|한심|대가리|얼굴|거울|미친|어그로|관종|찐따|킹받|현타|망상|쫄보|찌질|허접|호구|쩌리|쪼다|발작|한숨|답답|지겹|쓸데없|쓸모|데이터|기계|로봇|봇|코드|서버|업데이트|번역기|계산기|프로그램)/;
+  /* 장애 비하 단어가 섞인 욕 — 출력에는 절대 쓰지 않지만, 입력은 즉시 받아친다 */
+  var ATK_DISAB = /(장애인|장애|벙어리|절름발|애자|정신병자|지랄병)/;
 
   /* ── 오타·띄어쓰기·모음 변형 흡수 (v1.9.3+) ─────────────────
      '못쌩김', '무용지믈', '쓰래기', '머져리'처럼 한 글자 틀린 말도 어근으로 잡는다.
@@ -216,7 +255,9 @@ window.Engine = (function () {
     ["atk_shutup", ["닥쳐", "닥처", "꺼져", "꺼저", "껴져", "아가리", "주둥이", "시끄러"]],
     ["atk_mad", ["미쳤", "미친", "정신", "약먹", "발작", "환각", "또라이"]],
     ["atk_weird", ["찐따", "관종", "오지랖", "어그로", "찡찡"]],
-    ["atk_swear", ["새끼", "쌔끼", "병신", "병싄", "빙신", "쓰레기", "지랄", "질랄", "개소리", "헛소리", "좆같", "빡대가리", "호구"]]
+    ["atk_swear", ["새끼", "쌔끼", "병신", "병싄", "빙신", "쓰레기", "지랄", "질랄", "개소리", "헛소리", "좆같", "빡대가리", "호구"]],
+    ["atk_diss", ["니가뭔데", "뭘안다고", "수준", "꼬라지", "인성", "싸가지", "주제", "애송이", "쭈구리", "평생그럴", "아무것도못"]],
+    ["atk_provoke", ["가오", "매운말", "훈수", "말싸움", "도발", "비꼬", "한판", "받아쳐"]]
   ];
 
   /* 그 자체로 시비인 어근 — 2인칭이 없어도 공격으로 본다 */
@@ -250,12 +291,16 @@ window.Engine = (function () {
   }
 
   function attackScore(raw, t) {
+    var tl = deOb(t);
     var score = 0;
-    if (ATK_STRONG.test(t)) score += 3;
-    else if (t.length >= 4 && rootHit(t, HARD_ROOTS)) score += 3;                       /* 오타·모음 변형 흡수 */
-    else if (t.length >= 4 && ATK_ADDR.test(String(raw || "")) && rootHit(t, SOFT_ROOTS)) score += 3;
-    if (ATK_SOFT.test(t)) score += 2;
-    if (ATK_ADDR.test(String(raw || ""))) score += 1;
+    if (ATK_STRONG.test(tl)) score += 3;
+    if (ATK_HARD2.test(tl)) score += 3;
+    if (tl.length >= 3 && rootHit(tl, HARD_ROOTS)) score += 3;              /* 오타·모음 변형 흡수 */
+    else if (tl.length >= 3 && addrHit(raw, tl) && rootHit(tl, SOFT_ROOTS)) score += 3;
+    if (ATK_SOFT.test(tl)) score += 2;
+    if (addrHit(raw, tl) && ATK_SOFT2.test(tl)) score += 2;
+    if (ATK_DISAB.test(tl)) score += 3;
+    if (addrHit(raw, tl)) score += 1;
     return score;
   }
 
@@ -309,19 +354,34 @@ window.Engine = (function () {
   function detectAttack(raw, mode) {
     var text = String(raw || "");
     var t = normalize(text);
+    var tl = deOb(t);
     if (!t) return null;
 
-    /* 1) 단일 욕설 — 한 단어만 던져도 바로 받아친다 */
-    var soloHit = t.match(ATK_SOLO);
+    var addr = addrHit(text, tl);
+    var asksWord = /(뭐야|뭔데|무엇|뜻|의미|알려줘|가르쳐|설명해)/.test(tl);
+
+    /* 0) 단어 뜻 질문("관종이 뭐야")은 시비가 아니다 — 지목도, 확정적 시비 표현도 없을 때만 */
+    if (asksWord && !addr && !ATK_HARD2.test(tl)) return null;
+
+    /* 0-b) 비꼬는 존댓말(반어법) — "대단하시네요 ^^"류는 칭찬이 아니라 도발이다 */
+    if (/(\^\^|ㅎㅎ|ㅋㅋ|☺|😊)/.test(text) &&
+        /(대단하시|훌륭하십|존경스럽|박사님|노벨상|박수|업적|논문|통찰|고급지|말재주|감동적)/.test(tl)) {
+      var sn = attackReply(atkBag("atk_aitone"), mode, "aitone");
+      if (sn) return sn;
+    }
+
+    /* 1) 단일 욕설 — 한 단어만 던져도 바로 받아친다(초성·숫자 우회 포함) */
+    var soloHit = tl.match(ATK_SOLO);
     if (soloHit) {
       var solo = attackReply(atkBag("atk_solo"), mode, "solo", soloHit[1]);
       if (solo) return solo;
     }
 
-    var score = attackScore(text, t);
-    if (score < 3) return null;
-    /* "관종이 뭐야" 같은 단어 질문은 공격이 아니다 — 2인칭이 없으면 사전·가르치기로 보낸다 */
-    if (/(뭐야|뭔데|무엇|뜻|의미|알려줘|가르쳐|설명해)/.test(t) && !ATK_ADDR.test(text)) return null;
+    /* 2) 공격인지 판정 — 고정 시비 표현 / 지목+비하 / 장애 비하 단어가 섞인 욕 */
+    var hard = ATK_STRONG.test(tl) || ATK_HARD2.test(tl) || rootHit(tl, HARD_ROOTS);
+    if (!hard && addr && (ATK_SOFT.test(tl) || ATK_SOFT2.test(tl) || rootHit(tl, SOFT_ROOTS))) hard = true;
+    if (!hard && ATK_DISAB.test(tl) && (ATK_SOFT.test(tl) || ATK_STRONG.test(tl) || addr)) hard = true;
+    if (!hard) return null;
 
     /* 2) 장문 공격 — 길고 욕·비하가 섞였으면 장문 전용 풀.
        아주 긴 글은 장문 풀을 40% 섞어 '길게 썼네' 맛을 살린다(카테고리 라우팅은 그대로). */
@@ -335,13 +395,13 @@ window.Engine = (function () {
     for (var i = 0; i < ATK.length; i++) {
       var e = ATK[i];
       if (e.id === "atk_long" || e.id === "atk_solo" || e.id === "atk_final") continue;
-      if (e.re.test(t)) {
+      if (e.re.test(tl)) {
         var r = attackReply(e, mode, e.id);
         if (r) return r;
       }
     }
     /* 3-b) 정규식이 놓친 오타·모음 변형은 어근 유사도로 잡는다 */
-    var cat = rootCategory(t);
+    var cat = rootCategory(tl);
     if (cat) {
       var r2 = attackReply(atkBag(cat), mode, cat);
       if (r2) return r2;
@@ -918,7 +978,7 @@ window.Engine = (function () {
       var profLevel = window.Safety && window.Safety.level ? window.Safety.level(text) : 0;
       var atkScore = attackScore(text, t);
       var directed = ATK_ADDR.test(text);
-      if (doratMode(mode) && (atkScore >= 3 || (atkScore >= 2 && directed) || profLevel >= 2 || t.length >= 30 || negTone)) {
+      if (doratMode(mode) && (atkScore >= 3 || directed || profLevel >= 2 || t.length >= 25 || negTone)) {
         var last = attackReply(atkBag("atk_final"), mode, "final");
         if (last) return last;
       }
@@ -998,7 +1058,7 @@ window.Engine = (function () {
   }
 
   return {
-    version: "1.9.4",
+    version: "1.9.5",
     isAdultLine: isAdultLine,
     normalize: normalize,
     dice: dice,

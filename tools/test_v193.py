@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""도랏이 v1.9.4 자체 검사 — 쌍욕·받아치기 8,500+ 팩 + 카톡 자동 탈출.
+"""도랏이 v1.9.5 자체 검사 — 쌍욕·받아치기 8,500+ 팩 + 카톡 자동 탈출.
 
 검사 항목
  1) kb-dorat-extra.js 로딩 · 풀별 대사 수 · 총합 8,600 이상 · 중복 0
@@ -22,7 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
 FILES = ["js/safety.js", "js/kb-dialogues.js", "js/kb-corpus.js",
-         "js/kb-dorat-extra.js", "js/engine.js"]
+         "js/kb-dorat-extra.js", "js/kb-pad.js", "js/engine.js"]
 
 ctx = quickjs.Context()
 ctx.eval("globalThis.window = globalThis;")
@@ -64,8 +64,8 @@ counts = json.loads(ctx.eval("""
 for k, v in counts["pools"].items():
     print("        %-12s %5d" % (k, v))
 print("        total %d · unique %d" % (counts["total"], counts["unique"]))
-check("공격 팩이 11개 풀 이상", len(counts["pools"]) >= 11, list(counts["pools"]))
-check("고유 대사 8,600개 이상", counts["unique"] >= 8600, counts["unique"])
+check("공격 팩이 19개 풀 이상", len(counts["pools"]) >= 19, list(counts["pools"]))
+check("고유 대사 25,000개 이상", counts["unique"] >= 25000, counts["unique"])
 check("중복 없음", counts["unique"] == counts["total"], counts["total"] - counts["unique"])
 
 print("\n2) 공격 감지 · 받아치기")
@@ -85,6 +85,11 @@ cases = [
     ("거져", "atk_solo"),
     ("빙신아", "atk_solo"),
     ("넌쩌피ai여서믈밖에못하는무용지물쓰레기주제에반박할꺼면해봐", "atk_"),
+    ("가오쳐잡지마 개병신따까리장애인새끼야 어때 매운말만 하다가 매운말 들으니까? 이렇게", "atk_"),
+    ("찐따새끼네 대답도 못하는거 보니까", "atk_"),
+    ("ㅅ1ㅂ", "atk_solo"),
+    ("니가 뭔데", "atk_diss"),
+    ("가오 잡지 마", "atk_"),
 ]
 for text, want in cases:
     r = json.loads(ask(text))
@@ -132,13 +137,13 @@ html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
 cfg = open(os.path.join(ROOT, "js", "config.js"), encoding="utf-8").read()
 admin = open(os.path.join(ROOT, "admin.html"), encoding="utf-8").read()
 app = open(os.path.join(ROOT, "js", "app.js"), encoding="utf-8").read()
-check("index.html v1.9.4", '<span class="ver">v1.9.4</span>' in html)
+check("index.html v1.9.5", '<span class="ver">v1.9.5</span>' in html)
 check("index.html kb-dorat-extra 로딩", "kb-dorat-extra.js" in html)
-check("index.html 캐시버스트 4.8", "?v=4.8" in html and "?v=4.7" not in html)
-check("config v1.9.4", 'version: "v1.9.4"' in cfg)
+check("index.html 캐시버스트 4.9", "?v=4.9" in html and "?v=4.8" not in html)
+check("config v1.9.5", 'version: "v1.9.5"' in cfg)
 check("admin kb-dorat-extra 로딩", "kb-dorat-extra.js" in admin)
 check("app.js 학습 제외", 'res.kind !== "attack"' in app)
-check("engine 1.9.4", ctx.eval("window.Engine.version") == "1.9.4", ctx.eval("window.Engine.version"))
+check("engine 1.9.5", ctx.eval("window.Engine.version") == "1.9.5", ctx.eval("window.Engine.version"))
 
 print("\n7-b) 시비 수집 · 재활용")
 store = open(os.path.join(ROOT, "js", "store.js"), encoding="utf-8").read()
