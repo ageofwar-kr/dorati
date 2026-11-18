@@ -185,10 +185,13 @@ window.Engine = (function () {
   /* 도랏 계열에서 섞어 쓰는 말투 — 약올리기·깐족 + 사투리 4종.
      같은 욕만 반복되지 않게 확률로 말투를 바꿔 끼운다(카테고리 판정은 그대로). */
   var ATK_FLAVOR = [
-    ["atk_taunt", 0.26], ["atk_chung", 0.10], ["atk_gyeong", 0.10],
-    ["atk_jeolla", 0.10], ["atk_seoul", 0.10]
+    ["atk_taunt", 0.22], ["atk_aitone", 0.10], ["atk_chung", 0.09],
+    ["atk_gyeong", 0.09], ["atk_jeolla", 0.09], ["atk_seoul", 0.09]
   ];
-  var ATK_FLAVOR_KEYS = { atk_taunt: 1, atk_chung: 1, atk_gyeong: 1, atk_jeolla: 1, atk_seoul: 1, atk_solo: 1 };
+  var ATK_FLAVOR_KEYS = {
+    atk_taunt: 1, atk_aitone: 1, atk_chung: 1, atk_gyeong: 1,
+    atk_jeolla: 1, atk_seoul: 1, atk_solo: 1
+  };
 
   function attackReply(entry, mode, key, fill) {
     if (!entry) return null;
