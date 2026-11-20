@@ -173,12 +173,45 @@ html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
 cfg = open(os.path.join(ROOT, "js", "config.js"), encoding="utf-8").read()
 admin = open(os.path.join(ROOT, "admin.html"), encoding="utf-8").read()
 app = open(os.path.join(ROOT, "js", "app.js"), encoding="utf-8").read()
-check("index.html v1.9.5", '<span class="ver">v1.9.5</span>' in html)
+check("index.html v1.9.6", '<span class="ver">v1.9.6</span>' in html)
 check("index.html kb-pad 로딩", "kb-pad.js" in html)
-check("index.html 캐시버스트 4.9", "?v=4.9" in html and "?v=4.8" not in html)
-check("config v1.9.5", 'version: "v1.9.5"' in cfg)
+check("index.html 캐시버스트 5.1", "?v=5.1" in html and "?v=5.0" not in html)
+check("config v1.9.6", 'version: "v1.9.6"' in cfg)
 check("admin kb-pad 로딩", "kb-pad.js" in admin)
-check("engine 1.9.5", ctx.eval("window.Engine.version") == "1.9.5", ctx.eval("window.Engine.version"))
+check("engine 1.9.6", ctx.eval("window.Engine.version") == "1.9.6", ctx.eval("window.Engine.version"))
+
+print("\n8) 닉네임 호칭 — 도랏·미친도랏은 '님' 없이, 나머지는 '님' 유지")
+NIM_KEEP = [("clean", "건전"), ("normal", "일반"), ("smart", "똑똑이")]
+DORAT_OFF = [("dorat", "도랏"), ("dorat_pure", "도랏(순수)"), ("dorat_crazy", "미친도랏")]
+
+
+def nick(nickname, mode):
+    ctx.eval("globalThis.__n = %s; globalThis.__nm = %s;" % (json.dumps(nickname), json.dumps(mode)))
+    return ctx.eval("window.Engine.nickCall(window.__n, window.__nm)")
+
+
+for mode, label in NIM_KEEP:
+    for raw, want in (("자비스", "자비스님"), ("테스터", "테스터님"), ("김갑철", "김갑철님"), ("자비스님", "자비스님")):
+        got = nick(raw, mode)
+        check("%s '%s' → %s" % (label, raw, want), got == want, got)
+    print("        %-6s 자비스 → %s · 김갑철 → %s" % (label, nick("자비스", mode), nick("김갑철", mode)))
+
+for mode, label in DORAT_OFF:
+    for raw, want in (("자비스", "자비스야"), ("테스터", "테스터야"), ("김갑철", "김갑철아"),
+                      ("자비스님", "자비스야"), ("Bob", "Bob")):
+        got = nick(raw, mode)
+        check("%s '%s' → %s" % (label, raw, want), got == want, got)
+        check("%s '%s' 결과에 '님' 없음" % (label, raw), "님" not in got, got)
+    print("        %-8s 자비스 → %s · 김갑철 → %s · Bob → %s" % (
+        label, nick("자비스", mode), nick("김갑철", mode), nick("Bob", mode)))
+
+check("빈 닉네임은 빈 문자열", nick("", "dorat") == "" and nick("", "clean") == "")
+check("Engine.isDoratMode(dorat_pure)", ctx.eval("window.Engine.isDoratMode('dorat_pure')") is True)
+check("Engine.isDoratMode(clean) 아님", ctx.eval("window.Engine.isDoratMode('clean')") is False)
+check("app.js에 로컬 withNim 없음(호칭은 Engine 한 곳)", "withNim(" not in app)
+check("app.js 호칭은 Engine.nickCall", "window.Engine.nickCall(" in app)
+check("배지도 모드 따라 갱신", "renderNickBadge" in app and "renderNickBadge();" in app)
+check("게이트 안내에 도랏 예고", "도랏 모드에선" in html)
 
 print("\n결과: %s" % ("전부 통과 ✅" if not fail else "실패 %d건 ❌ %s" % (len(fail), fail)))
 sys.exit(0 if not fail else 1)

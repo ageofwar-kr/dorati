@@ -233,15 +233,20 @@
 
 
   /* ── 닉네임 ───────────────────────────────────────────── */
+  /* 배지도 같은 규칙을 따른다 — 도랏 모드에서는 '님' 없이 보인다(v1.9.6) */
+  function renderNickBadge() {
+    if (!state.nick) {
+      nickBadge.hidden = true;
+      return;
+    }
+    nickBadge.hidden = false;
+    nickBadge.textContent = " · " + nickCall(state.nick);
+  }
+
   function setNick(nick) {
     state.nick = nick || "";
     lsSet(NICK_KEY, state.nick);
-    if (state.nick) {
-      nickBadge.hidden = false;
-      nickBadge.textContent = " · " + withNim(state.nick);
-    } else {
-      nickBadge.hidden = true;
-    }
+    renderNickBadge();
   }
 
   function openGate() {
@@ -325,7 +330,7 @@
     addEggBanner();
     var pool = window.DORATI_KB.eggGreeting || [];
     var msg = pool.length ? pool[Math.floor(Math.random() * pool.length)] : "🔞 미친도랏 입장 완료.";
-    var n = withNim(state.nick);
+    var n = nickCall(state.nick);
     addBot(escapeHtml(n ? n + ", " + msg : msg));
     state.lastBot = { text: msg, learnable: false };
     state.pendingAsk = null;
@@ -353,6 +358,7 @@
     updateModelLabel();
     renderFlavor();
     lsSet("dorati.mode", mode);
+    renderNickBadge();
     /* 똑똑이 모드로 들어오는 순간 중계 서버를 미리 데운다(입력하는 동안 콜드 스타트 종료) */
     if (mode === "smart" && window.Smart && window.Smart.warm) window.Smart.warm();
     requestAnimationFrame(function () { placeGlider(); });
@@ -461,15 +467,14 @@
   }
 
   /* ── 닉네임으로 부르기 ────────────────────────────────── */
-  /* 닉네임 뒤에는 항상 '님'을 붙인다(v1.7). 이미 '님'으로 끝나면 겹쳐 붙이지 않는다. 뒤에는 쉼표. */
-  function withNim(nick) {
-    var n = String(nick || "").trim();
-    if (!n) return "";
-    return /님$/.test(n) ? n : n + "님";
+  /* 건전·일반·똑똑이는 '○○님', 도랏·미친도랏은 '님' 없이(받침에 따라 아/야) 부른다.
+     호칭 판단은 Engine.nickCall 한 곳에서 한다(callName·배지·이스터에그 인사·내보내기가 모두 같은 규칙). */
+  function nickCall(nick) {
+    return window.Engine.nickCall(nick, engineMode());
   }
 
   function callName(nick, text) {
-    var n = withNim(nick);
+    var n = nickCall(nick);
     return n ? n + ", " + text : text;
   }
 
@@ -679,7 +684,7 @@
   document.getElementById("menu-export").addEventListener("click", function () {
     toggleMenu(false);
     var lines = state.history.map(function (m) {
-      var who = m.r === "u" ? (withNim(state.nick) || "나") : (m.r === "b" ? "도랏이" : "안내");
+      var who = m.r === "u" ? (window.Engine.bareNick(state.nick) || "나") : (m.r === "b" ? "도랏이" : "안내");
       var body = m.t || String(m.h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
       var d = new Date(m.ts || Date.now());
       var stamp = d.toLocaleString("ko-KR");

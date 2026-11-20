@@ -1018,6 +1018,42 @@ window.Engine = (function () {
     });
   }
 
+  /* ── 닉네임 호칭 (v1.9.6) ───────────────────────────────
+     건전·일반·똑똑이: '○○님' — v1.7 방식 그대로(이미 '님'으로 끝나면 겹쳐 붙이지 않는다).
+     도랏·미친도랏: '님'을 붙이지 않고 반말로 이름만 부른다. 받침이 있으면 '아',
+     없으면 '야'를 붙여 자연스럽게(자비스 → 자비스야, 김갑철 → 김갑철아). */
+  var DORAT_MODES = { dorat: 1, dorat_pure: 1, dorat_crazy: 1 };
+
+  function isDoratMode(mode) {
+    return DORAT_MODES[mode] === 1;
+  }
+
+  /* 도랏 쪽 호칭은 '님'을 떼고 쓴다 — 닉네임을 '자비스님'으로 정한 사람도 '자비스야'가 된다 */
+  function bareNick(nick) {
+    return String(nick || "").replace(/(?:\s*님)+$/, "").trim();
+  }
+
+  function withNim(nick) {
+    var n = String(nick || "").trim();
+    if (!n) return "";
+    return /님$/.test(n) ? n : n + "님";
+  }
+
+  function doratNick(nick) {
+    var n = bareNick(nick);
+    if (!n) return "";
+    var last = n.charAt(n.length - 1);
+    var code = last.charCodeAt(0);
+    if (code < 0xAC00 || code > 0xD7A3) return n;   /* 한글 이름이 아니면 이름만 */
+    if (last === "아" || last === "야") return n;  /* 이미 부름말로 끝나면 그대로 */
+    return n + ((code - 0xAC00) % 28 === 0 ? "야" : "아");
+  }
+
+  /* mode 는 화면 모드(dorat/clean/normal/smart)와 엔진 모드(dorat_pure/dorat_crazy) 모두 받는다 */
+  function nickCall(nick, mode) {
+    return isDoratMode(mode) ? doratNick(nick) : withNim(nick);
+  }
+
   /* ── 통계 · 벤치 (검증용) ─────────────────────────────── */
   function stats() {
     var intentReplies = 0, pairReplies = 0, minPerMode = 99, minPair = 99;
@@ -1063,8 +1099,13 @@ window.Engine = (function () {
   }
 
   return {
-    version: "1.9.5",
+    version: "1.9.6",
     isAdultLine: isAdultLine,
+    isDoratMode: isDoratMode,
+    bareNick: bareNick,
+    withNim: withNim,
+    doratNick: doratNick,
+    nickCall: nickCall,
     normalize: normalize,
     dice: dice,
     dictTarget: dictTarget,
